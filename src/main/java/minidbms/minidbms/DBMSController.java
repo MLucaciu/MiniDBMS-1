@@ -7,6 +7,7 @@ import minidbms.minidbms.Models.Table;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.web.bind.annotation.*;
+import redis.clients.jedis.Jedis;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,9 +19,15 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "*")
 public class DBMSController {
 
-    private List<Database> databases = new ArrayList<>();
-    ObjectMapper mapper = new ObjectMapper();
-    JSONObject jsonResponse = new JSONObject();
+    private List<Database> databases;
+    ObjectMapper mapper;
+    Jedis jedis;
+
+    DBMSController(){
+        jedis = new Jedis();
+        mapper = new ObjectMapper();
+        databases = new ArrayList<>();
+    }
 
     @RequestMapping(value = "/createDatabase", method = RequestMethod.POST)
     @ResponseBody
@@ -114,5 +121,13 @@ public class DBMSController {
     public List<String> getTables(@RequestParam(value="dbName", required = true) String dbName){
         Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
         return database.getTables().stream().map(db -> db.getTableName()).collect(Collectors.toList());
+    }
+
+    @RequestMapping(value = "/getPrimaryKeys", method = RequestMethod.GET)
+    public List<String> getPrimaryKeys(@RequestParam(value="dbName", required = true) String dbName,
+                                       @RequestParam(value="tableName", required = true) String tableName){
+        Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
+        return table.getPrimaryKeys();
     }
 }

@@ -1,1 +1,54 @@
-[{"dbName":"fb","tables":[{"tableName":"tb","fileName":"","rowLength":"","structure":[{"attributeName":"Name","type":"Type","length":"Length","isNull":"Is Null"}],"primaryKeys":["Name"],"indexFiles":[{"indexName":"Index name","keyLength":"Key length","isUnique":"Is Unique","indexType":null,"indexAttributes":["Name"]},{"indexName":"Index name","keyLength":"Key length","isUnique":"Is Unique","indexType":null,"indexAttributes":["Name"]}]},{"tableName":"tb","fileName":"","rowLength":"","structure":[{"attributeName":"Name","type":"Type","length":"Length","isNull":"Is Null"}],"primaryKeys":["Name"],"indexFiles":[]}]}]
+[
+    {
+        "dbName": "db",
+        "tables": [
+            {
+                "tableName": "tb",
+                "fileName": "",
+                "rowLength": "",
+                "structure": [
+                    {
+                        "attributeName": "Attribute Name",
+                        "type": "Attribute Type",
+                        "length": "Attribute Length",
+                        "isNull": "Attribute Is Null"
+                    }
+                ],
+                "primaryKeys": [
+                    "Primary key name"
+                ],
+                "foreignKeys": [],
+                "indexFiles": []
+            },
+            {
+                "tableName": "",
+                "fileName": "",
+                "rowLength": "",
+                "structure": [
+                    {
+                        "attributeName": "Attribute Name",
+                        "type": "Attribute Type",
+                        "length": "Attribute Length",
+                        "isNull": "Attribute Is Null"
+                    }
+                ],
+                "primaryKeys": [
+                    "Primary key name"
+                ],
+                "foreignKeys": [
+                    {
+                        "nameForeignKey": "Foreign key name",
+                        "tableReference": "tb",
+                        "keyReference": "Primary key name"
+                    },
+                    {
+                        "nameForeignKey": "Foreign key name",
+                        "tableReference": "tb",
+                        "keyReference": "Primary key name"
+                    }
+                ],
+                "indexFiles": []
+            }
+        ]
+    }
+]

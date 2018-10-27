@@ -13,23 +13,28 @@ public class Table implements Serializable {
     private String rowLength;
     private List<Attribute> structure;
     private List<String> primaryKeys;
-    //foreign keys + references
-    //unique keys
+    private List<ForeignKey> foreignKeys;
     private List<IndexFile> indexFiles;
 
-    public Table(String tableName, String fileName, String rowLength, List<Attribute> structure, List<String> primaryKeys, List<IndexFile> indexFiles){
+    public Table(String tableName, String fileName, String rowLength, List<Attribute> structure,
+                 List<String> primaryKeys, List<IndexFile> indexFiles, List<ForeignKey> foreignKeys){
         this.tableName = tableName;
         this.fileName = fileName;
         this.rowLength = rowLength;
         this.structure = structure;
         this.primaryKeys = primaryKeys;
         this.indexFiles = indexFiles;
+        this.foreignKeys = foreignKeys;
     }
 
     public Table(){}
 
     public String getTableName() {
         return tableName;
+    }
+
+    public List<String> getPrimaryKeys() {
+        return primaryKeys;
     }
 
     public void addindexFile(IndexFile indexFile){
