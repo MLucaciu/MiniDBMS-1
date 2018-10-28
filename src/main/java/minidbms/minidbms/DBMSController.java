@@ -7,7 +7,6 @@ import minidbms.minidbms.Models.Table;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.web.bind.annotation.*;
-import redis.clients.jedis.Jedis;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,11 +19,9 @@ import java.util.stream.Collectors;
 public class DBMSController {
 
     private List<Database> databases;
-    ObjectMapper mapper;
-    Jedis jedis;
+    private ObjectMapper mapper;
 
     DBMSController(){
-        jedis = new Jedis();
         mapper = new ObjectMapper();
         databases = new ArrayList<>();
     }
