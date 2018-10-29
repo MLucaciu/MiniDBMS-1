@@ -1,13 +1,12 @@
 package minidbms.minidbms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import redis.clients.jedis.Jedis;
 import minidbms.minidbms.Models.Database;
 import minidbms.minidbms.Models.IndexFile;
 import minidbms.minidbms.Models.Table;
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.springframework.web.bind.annotation.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,16 +20,25 @@ public class DBMSController {
     private List<Database> databases;
     private ObjectMapper mapper;
 
+    /**
+     * 
+     */
     DBMSController(){
         mapper = new ObjectMapper();
         databases = new ArrayList<>();
+
+        Jedis jedis = new Jedis("localhost");
+        jedis.set("foo", "bar");
+        String value = jedis.get("foo");
+
+        int ceva =3 ;
     }
 
     @RequestMapping(value = "/createDatabase", method = RequestMethod.POST)
     @ResponseBody
     public String createDataBase(@RequestParam(value="dbName", required = true) String dbName) throws IOException, JSONException {
         databases.add(new Database(dbName));
-        mapper.writeValue(new File("D:\\Faculty\\minidbms\\database.json"), databases );
+        mapper.writeValue(new File("D:\\chestii\\1 - isgbd\\database.json"), databases );
         return "Success!";
     }
 
