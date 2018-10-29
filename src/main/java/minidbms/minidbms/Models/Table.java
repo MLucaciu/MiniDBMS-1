@@ -40,4 +40,8 @@ public class Table implements Serializable {
     public void addindexFile(IndexFile indexFile){
         this.indexFiles.add(indexFile);
     }
+
+    public List<Attribute> getStructure() {
+        return structure;
+    }
 }
