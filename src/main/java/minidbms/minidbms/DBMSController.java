@@ -9,6 +9,7 @@ import minidbms.minidbms.Models.Table;
 import org.json.JSONException;
 import org.springframework.web.bind.annotation.*;
 import java.io.File;
+import java.util.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public class DBMSController {
     private ObjectMapper mapper;
     Jedis jedis;
 
+    private String PATH_TO_JSON = "D:\\chestii\\1 - isgbd\\database.json";
     /**
      *
      */
@@ -42,7 +44,7 @@ public class DBMSController {
     @ResponseBody
     public String createDataBase(@RequestParam(value="dbName", required = true) String dbName) throws IOException, JSONException {
         databases.add(new Database(dbName));
-        mapper.writeValue(new File("D:\\chestii\\1 - isgbd\\database.json"), databases );
+        mapper.writeValue(new File(PATH_TO_JSON), databases );
         return "Success!";
     }
 
@@ -62,7 +64,7 @@ public class DBMSController {
             newTable = new ObjectMapper().readValue(result, Table.class);
             Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
             database.addTable(newTable);
-            mapper.writeValue(new File("D:\\Faculty\\minidbms\\database.json"), databases );
+            mapper.writeValue(new File(PATH_TO_JSON), databases );
             jedis.set(newTable.getTableName(), "");
         } catch (IOException e) {
             e.printStackTrace();
@@ -76,8 +78,8 @@ public class DBMSController {
 
         if(database != null){
             this.databases.remove(database);
-            mapper.writeValue(new File("D:\\Faculty\\minidbms\\database.json"), databases );
-        }
+            mapper.writeValue(new File(PATH_TO_JSON), databases );
+    }
 
         return "Success";
     }
@@ -91,7 +93,7 @@ public class DBMSController {
             Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
             if(table != null){
                 database.getTables().remove(table);
-                mapper.writeValue(new File("D:\\Faculty\\minidbms\\database.json"), databases );
+                mapper.writeValue(new File(PATH_TO_JSON), databases );
             }
         }
 
@@ -115,7 +117,7 @@ public class DBMSController {
             Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
             Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
             table.addindexFile(newIndexFile);
-            mapper.writeValue(new File("D:\\Faculty\\minidbms\\database.json"), databases );
+            mapper.writeValue(new File(PATH_TO_JSON), databases );
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -127,11 +129,13 @@ public class DBMSController {
                          @RequestParam(value="tableName", required = true) String tableName,
                          @RequestBody String values) throws UnsupportedEncodingException {
 
+        Map map = new HashMap();
         //check type, length and IsNull
         //first primary keys; second foreign keys, attributes
         String result = java.net.URLDecoder.decode(values.substring(values.lastIndexOf("&")+1), "UTF-8");
         result = result.substring(1, result.length() - 2);
         String[] entities = result.split("#");
+
 
         Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
         Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
@@ -172,8 +176,9 @@ public class DBMSController {
             }
         }
 
-        String tablesData = jedis.get(tableName);
-        jedis.set(tableName,tablesData.concat(result));
+        Map tablesData = jedis.hgetAll(tableName);
+        tablesData.put(entities[0],entities);
+        jedis.hmset(tableName,tablesData);
 
         return "Success!";
     }
