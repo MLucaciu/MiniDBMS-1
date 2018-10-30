@@ -21,4 +21,16 @@ public class Attribute implements Serializable {
     }
 
     public Attribute(){}
+
+    public String getIsNull() {
+        return isNull;
+    }
+
+    public String getLength() {
+        return length;
+    }
+
+    public String getType() {
+        return type;
+    }
 }
