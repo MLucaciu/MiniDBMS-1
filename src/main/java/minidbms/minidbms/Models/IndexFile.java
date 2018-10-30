@@ -24,4 +24,8 @@ public class IndexFile implements Serializable {
     }
 
     public IndexFile(){}
+
+    public String getIndexName() {
+        return indexName;
+    }
 }
