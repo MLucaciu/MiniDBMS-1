@@ -13,6 +13,7 @@ import java.util.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,7 +33,7 @@ public class DBMSController {
         mapper = new ObjectMapper();
         databases = new ArrayList<>();
 
-        Jedis jedis = new Jedis("localhost");
+        jedis = new Jedis("localhost");
         jedis.set("foo", "bar");
         String value = jedis.get("foo");
         HashMap hm = new HashMap<String,String>();
@@ -57,6 +58,9 @@ public class DBMSController {
     @RequestMapping(value = "/createDatabase", method = RequestMethod.POST)
     @ResponseBody
     public String createDataBase(@RequestParam(value="dbName", required = true) String dbName) throws IOException, JSONException {
+        if(this.databases.stream().filter(db -> db.getDbName().equals(dbName)).count() != 0){
+            return "Database already exists!";
+        }
         databases.add(new Database(dbName));
         mapper.writeValue(new File(PATH_TO_JSON), databases );
         return "Success!";
@@ -79,10 +83,14 @@ public class DBMSController {
             result = result.substring(0, result.length() - 1);
             newTable = new ObjectMapper().readValue(result, Table.class);
             Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+            if(database.getTables().stream().filter(tb -> tb.getTableName().equals(newTable.getTableName())).count() != 0){
+                return "Table already exists!";
+            }
             database.addTable(newTable);
             mapper.writeValue(new File(PATH_TO_JSON), databases );
             HashMap hm = new HashMap <String,String>();
             hm.put("database",database.getDbName());
+
             jedis.hmset(newTable.getTableName(), hm);
         } catch (IOException e) {
             e.printStackTrace();
@@ -134,6 +142,9 @@ public class DBMSController {
             newIndexFile = new ObjectMapper().readValue(result, IndexFile.class);
             Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
             Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
+            if(table.getIndexFiles().stream().filter(ind -> ind.getIndexName().equals(newIndexFile.getIndexName())).count() != 0){
+                return "Index File already exists!";
+            }
             table.addindexFile(newIndexFile);
             mapper.writeValue(new File(PATH_TO_JSON), databases );
         } catch (IOException e) {
@@ -147,7 +158,6 @@ public class DBMSController {
                          @RequestParam(value="tableName", required = true) String tableName,
                          @RequestBody String values) throws UnsupportedEncodingException {
 
-        Map map = new HashMap();
         //check type, length and IsNull
         //first primary keys; second foreign keys, attributes
         String result = java.net.URLDecoder.decode(values.substring(values.lastIndexOf("&")+1), "UTF-8");
@@ -159,16 +169,34 @@ public class DBMSController {
         Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
         Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
 
+        Map tablesData = jedis.hgetAll(tableName);
+
         //check if the primary key is unique
         int noPrimaryKeys = table.getPrimaryKeys().size();
         for(int i = 0; i < noPrimaryKeys ; i++){
             String primaryKey = entities[i];
-            if(table.getPrimaryKeys().stream().filter(pk -> pk.equals(primaryKey)).count() != 0){
+            //split("#")
+            if(((HashMap) tablesData).keySet().stream().filter(e -> e.toString().contains(primaryKey)).count() != 0){
                 return "Primary key is not unique";
             }
         }
 
         //check for foreign keys
+        /* int noForeignKeys = table.getForeignKeys().size();
+        int indexForeignKeys = -1;
+        for(int i = noPrimaryKeys; i < noForeignKeys ; i++){
+            indexForeignKeys++;
+            //split("#")
+            String tableForeignKeysName = table.getForeignKeys().get(indexForeignKeys).getTableReference();
+            Map tableForeignKeys = jedis.hgetAll(tableForeignKeysName);
+            String foreignKeyValue = entities[i];
+            if(((HashMap) tableForeignKeys).keySet().stream().filter(e -> e.toString().contains(foreignKeyValue)).count() == 0){
+                return "Foreign Key does not exists!";
+            }
+            if(((HashMap) tableForeignKeys).values().stream().filter(e -> e.toString().contains(foreignKeyValue)).count() == 0){
+                return "Foreign Key does not exists!";
+            }
+        } */
 
         //check attributes(type,length,IsNull)
         int indexAtt = -1;
@@ -194,8 +222,17 @@ public class DBMSController {
                 return "Attribute must not be NULL";
             }
         }
-        Map tablesData = jedis.hgetAll(tableName);
-        tablesData.put(entities[0],entities);
+
+        String primaryKey = entities[0];
+        for(int i = 1; i < noPrimaryKeys; i++){
+            primaryKey += "#" + entities[i];
+        }
+        String valuesEntity = entities[noPrimaryKeys];
+        for(int i = noPrimaryKeys+1; i<entities.length; i++){
+            valuesEntity += "#" + entities[i];
+        }
+        tablesData.put(primaryKey,valuesEntity);
+
         jedis.hmset(tableName,tablesData);
 
         return "Success!";

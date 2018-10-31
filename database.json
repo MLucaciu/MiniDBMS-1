@@ -1,1 +1,1 @@
-[{"dbName":"cer","tables":[{"tableName":"tre","fileName":"","rowLength":"","structure":[{"attributeName":"t","type":"String","length":"10","isNull":"1"}],"primaryKeys":["t"],"foreignKeys":[],"indexFiles":[]}]}]
+[{"dbName":" d","tables":[{"tableName":"der","fileName":"","rowLength":"","structure":[{"attributeName":"de","type":"String","length":"3","isNull":"1"}],"primaryKeys":["de"],"foreignKeys":[],"indexFiles":[]}]}]

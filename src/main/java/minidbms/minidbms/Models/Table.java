@@ -44,4 +44,12 @@ public class Table implements Serializable {
     public List<Attribute> getStructure() {
         return structure;
     }
+
+    public List<IndexFile> getIndexFiles() {
+        return indexFiles;
+    }
+
+    public List<ForeignKey> getForeignKeys() {
+        return foreignKeys;
+    }
 }

@@ -18,4 +18,8 @@ public class ForeignKey {
 
     public ForeignKey(){
     }
+
+    public String getTableReference() {
+        return tableReference;
+    }
 }
