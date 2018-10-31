@@ -35,7 +35,21 @@ public class DBMSController {
         Jedis jedis = new Jedis("localhost");
         jedis.set("foo", "bar");
         String value = jedis.get("foo");
+        HashMap hm = new HashMap<String,String>();
+        hm.put("100","Amit");
+        hm.put("1","cecece");
+        String ce = jedis.hmset("ce", hm);
 
+
+        Map tablesData = jedis.hgetAll("ce");
+        Object check = tablesData.get("1");
+        tablesData.remove("1");
+        jedis.hmset("ce",tablesData);
+
+        Object tablesData2 = jedis.hget("ce","1");
+        jedis.hdel("ce","1");
+        Object tablesData3 = jedis.hget("ce","1");
+        Map tablesData4 = jedis.hgetAll("ce");
         int ceva =3 ;
 
     }
@@ -58,6 +72,8 @@ public class DBMSController {
                               @RequestBody(required = false) String table){
         String result;
         Table newTable;
+        Jedis jedis = new Jedis("localhost");
+        Map tablesData4 = jedis.hgetAll("ce");
         try {
             result = java.net.URLDecoder.decode(table.substring(table.indexOf("&")+1), "UTF-8");
             result = result.substring(0, result.length() - 1);
@@ -65,7 +81,9 @@ public class DBMSController {
             Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
             database.addTable(newTable);
             mapper.writeValue(new File(PATH_TO_JSON), databases );
-            jedis.set(newTable.getTableName(), "");
+            HashMap hm = new HashMap <String,String>();
+            hm.put("database",database.getDbName());
+            jedis.hmset(newTable.getTableName(), hm);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -135,7 +153,8 @@ public class DBMSController {
         String result = java.net.URLDecoder.decode(values.substring(values.lastIndexOf("&")+1), "UTF-8");
         result = result.substring(1, result.length() - 2);
         String[] entities = result.split("#");
-
+        Jedis jedis = new Jedis("localhost");
+        Map tablesData4 = jedis.hgetAll("ce");
 
         Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
         Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
@@ -175,7 +194,6 @@ public class DBMSController {
                 return "Attribute must not be NULL";
             }
         }
-
         Map tablesData = jedis.hgetAll(tableName);
         tablesData.put(entities[0],entities);
         jedis.hmset(tableName,tablesData);
@@ -200,5 +218,32 @@ public class DBMSController {
         Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
         Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
         return table.getPrimaryKeys();
+    }
+
+
+    @RequestMapping(value = "/delete", method = RequestMethod.POST)
+    public String delete(@RequestParam(value="dbName", required = true) String dbName,
+                         @RequestParam(value="tableName", required = true) String tableName,
+                         @RequestBody String values) throws UnsupportedEncodingException {
+
+        Map map = new HashMap();
+        Jedis jedis = new Jedis("localhost");
+        Map tablesData4 = jedis.hgetAll("ce");
+        //check type, length and IsNull
+        //first primary keys; second foreign keys, attributes
+        String result = java.net.URLDecoder.decode(values, "UTF-8");
+        result = result.substring(1, result.length() - 2);
+        String[] entities = result.split("#");
+
+
+
+        Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
+
+
+        Object tablesData2 = jedis.hget(tableName,values);
+        jedis.hdel(tableName,values);
+        Object tablesData3 = jedis.hget(tableName,values);
+        return "Success!";
     }
 }

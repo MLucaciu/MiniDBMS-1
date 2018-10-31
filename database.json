@@ -1,1 +1,1 @@
-[{"dbName":"ceva","tables":[{"tableName":"tabe","fileName":"","rowLength":"","structure":[{"attributeName":"id","type":"int","length":"5","isNull":"1"}],"primaryKeys":["id"],"foreignKeys":[],"indexFiles":[]}]}]
+[{"dbName":"cer","tables":[{"tableName":"tre","fileName":"","rowLength":"","structure":[{"attributeName":"t","type":"String","length":"10","isNull":"1"}],"primaryKeys":["t"],"foreignKeys":[],"indexFiles":[]}]}]
