@@ -1,9 +1,13 @@
 package minidbms.minidbms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sleepycat.je.EnvironmentConfig;
 import minidbms.minidbms.Models.Attribute;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
 import redis.clients.jedis.Jedis;
-import minidbms.minidbms.Models.Database;
 import minidbms.minidbms.Models.IndexFile;
 import minidbms.minidbms.Models.Table;
 import org.json.JSONException;
@@ -17,42 +21,89 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.sleepycat.bind.serial.ClassCatalog;
+import com.sleepycat.bind.serial.SerialBinding;
+import com.sleepycat.bind.serial.StoredClassCatalog;
+import com.sleepycat.bind.tuple.TupleBinding;
+import com.sleepycat.collections.StoredSortedMap;
+import com.sleepycat.collections.TransactionRunner;
+import com.sleepycat.collections.TransactionWorker;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.Environment;
+
+
 @RestController
 @CrossOrigin(origins = "*")
-public class DBMSController {
+public class DBMSController implements TransactionWorker{
 
-    private List<Database> databases;
-    private ObjectMapper mapper;
+    private List<minidbms.minidbms.Models.Database> databases = new ArrayList<>();
+    private ObjectMapper mapper = new ObjectMapper();
     Jedis jedis;
 
-    private String PATH_TO_JSON = "D:\\chestii\\1 - isgbd\\database.json";
+    private Environment env;
+    private ClassCatalog catalog;
+    private Database db;
+    private SortedMap<Integer, String> map;
+
+    private String PATH_TO_JSON = "D:\\Faculty\\minidbms\\database.json";
+
+    private static final String[] INT_NAMES = {
+            "Hello", "Database", "World",
+    };
+
     /**
      *
      */
-    DBMSController(){
-        mapper = new ObjectMapper();
-        databases = new ArrayList<>();
+    public DBMSController(Environment env) throws Exception {
+        this.env = env;
+        open();
+    }
 
-        jedis = new Jedis("localhost");
-        jedis.set("foo", "bar");
-        String value = jedis.get("foo");
-        HashMap hm = new HashMap<String,String>();
-        hm.put("100","Amit");
-        hm.put("1","cecece");
-        String ce = jedis.hmset("ce", hm);
+    /** Opens the database and creates the Map. */
+    private void open()
+            throws Exception {
 
+        // use a generic database configuration
+        DatabaseConfig dbConfig = new DatabaseConfig();
+        dbConfig.setTransactional(true);
+        dbConfig.setAllowCreate(true);
 
-        Map tablesData = jedis.hgetAll("ce");
-        Object check = tablesData.get("1");
-        tablesData.remove("1");
-        jedis.hmset("ce",tablesData);
+        // catalog is needed for serial bindings (java serialization)
+        Database catalogDb = env.openDatabase(null, "catalog", dbConfig);
+        catalog = new StoredClassCatalog(catalogDb);
 
-        Object tablesData2 = jedis.hget("ce","1");
-        jedis.hdel("ce","1");
-        Object tablesData3 = jedis.hget("ce","1");
-        Map tablesData4 = jedis.hgetAll("ce");
-        int ceva =3 ;
+        // use Integer tuple binding for key entries
+        TupleBinding<Integer> keyBinding =
+                TupleBinding.getPrimitiveBinding(Integer.class);
 
+        // use String serial binding for data entries
+        SerialBinding<String> dataBinding =
+                new SerialBinding<String>(catalog, String.class);
+
+        this.db = env.openDatabase(null, "helloworld", dbConfig);
+
+        // create a map view of the database
+        this.map = new StoredSortedMap<Integer, String>
+                (db, keyBinding, dataBinding, true);
+    }
+
+    /** Closes the database. */
+    public void close()
+            throws Exception {
+
+        if (catalog != null) {
+            catalog.close();
+            catalog = null;
+        }
+        if (db != null) {
+            db.close();
+            db = null;
+        }
+        if (env != null) {
+            env.close();
+            env = null;
+        }
     }
 
     @RequestMapping(value = "/createDatabase", method = RequestMethod.POST)
@@ -61,7 +112,7 @@ public class DBMSController {
         if(this.databases.stream().filter(db -> db.getDbName().equals(dbName)).count() != 0){
             return "Database already exists!";
         }
-        databases.add(new Database(dbName));
+        databases.add(new minidbms.minidbms.Models.Database(dbName));
         mapper.writeValue(new File(PATH_TO_JSON), databases );
         return "Success!";
     }
@@ -82,7 +133,7 @@ public class DBMSController {
             result = java.net.URLDecoder.decode(table.substring(table.indexOf("&")+1), "UTF-8");
             result = result.substring(0, result.length() - 1);
             newTable = new ObjectMapper().readValue(result, Table.class);
-            Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+            minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
             if(database.getTables().stream().filter(tb -> tb.getTableName().equals(newTable.getTableName())).count() != 0){
                 return "Table already exists!";
             }
@@ -100,7 +151,7 @@ public class DBMSController {
 
     @RequestMapping(value = "/dropDatabase", method = RequestMethod.DELETE)
     public String dropDatabase(@RequestParam(value="dbName", required = true) String dbName) throws IOException {
-        Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
 
         if(database != null){
             this.databases.remove(database);
@@ -113,7 +164,7 @@ public class DBMSController {
     @RequestMapping(value = "/dropTable", method = RequestMethod.DELETE)
     public String dropTable(@RequestParam(value="tableName", required = true) String tableName,
                             @RequestParam(value="dbName", required = true) String dbName) throws IOException {
-        Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
 
         if(database != null){
             Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
@@ -140,7 +191,7 @@ public class DBMSController {
             result = java.net.URLDecoder.decode(indexFile.substring(indexFile.lastIndexOf("&")+1), "UTF-8");
             result = result.substring(0, result.length() - 1);
             newIndexFile = new ObjectMapper().readValue(result, IndexFile.class);
-            Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+            minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
             Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
             if(table.getIndexFiles().stream().filter(ind -> ind.getIndexName().equals(newIndexFile.getIndexName())).count() != 0){
                 return "Index File already exists!";
@@ -166,7 +217,7 @@ public class DBMSController {
         Jedis jedis = new Jedis("localhost");
         Map tablesData4 = jedis.hgetAll("ce");
 
-        Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
         Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
 
         Map tablesData = jedis.hgetAll(tableName);
@@ -245,14 +296,14 @@ public class DBMSController {
 
     @RequestMapping(value = "/getTables", method = RequestMethod.GET)
     public List<String> getTables(@RequestParam(value="dbName", required = true) String dbName){
-        Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
         return database.getTables().stream().map(db -> db.getTableName()).collect(Collectors.toList());
     }
 
     @RequestMapping(value = "/getPrimaryKeys", method = RequestMethod.GET)
     public List<String> getPrimaryKeys(@RequestParam(value="dbName", required = true) String dbName,
                                        @RequestParam(value="tableName", required = true) String tableName){
-        Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
         Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
         return table.getPrimaryKeys();
     }
@@ -274,7 +325,7 @@ public class DBMSController {
 
 
 
-        Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
         Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
 
 
@@ -282,5 +333,33 @@ public class DBMSController {
         jedis.hdel(tableName,values);
         Object tablesData3 = jedis.hget(tableName,values);
         return "Success!";
+    }
+
+    @Override
+    public void doWork() throws Exception {
+        writeAndRead();
+    }
+
+    /** Writes and reads the database via the Map. */
+    private void writeAndRead() {
+
+        // check for existing data
+        Integer key = new Integer(0);
+        String val = map.get(key);
+        if (val == null) {
+            System.out.println("Writing data");
+            // write in reverse order to show that keys are sorted
+            for (int i = INT_NAMES.length - 1; i >= 0; i -= 1) {
+                map.put(new Integer(i), INT_NAMES[i]);
+            }
+        }
+        // get iterator over map entries
+        Iterator<Map.Entry<Integer, String>> iter = map.entrySet().iterator();
+        System.out.println("Reading data");
+        while (iter.hasNext()) {
+            Map.Entry<Integer, String> entry = iter.next();
+            System.out.println(entry.getKey().toString() + ' ' +
+                    entry.getValue());
+        }
     }
 }

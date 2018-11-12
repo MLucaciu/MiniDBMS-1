@@ -1,1 +1,55 @@
-[{"dbName":" d","tables":[{"tableName":"der","fileName":"","rowLength":"","structure":[{"attributeName":"de","type":"String","length":"3","isNull":"1"}],"primaryKeys":["de"],"foreignKeys":[],"indexFiles":[]}]}]
+[
+    {
+        "dbName": "db",
+        "tables": [
+            {
+                "tableName": "tb",
+                "fileName": "",
+                "rowLength": "",
+                "structure": [
+                    {
+                        "attributeName": "Name",
+                        "type": "String",
+                        "length": "10",
+                        "isNull": "False"
+                    },
+                    {
+                        "attributeName": "Year",
+                        "type": "Integer",
+                        "length": "",
+                        "isNull": "True"
+                    }
+                ],
+                "primaryKeys": [
+                    "Name"
+                ],
+                "foreignKeys": [],
+                "indexFiles": []
+            },
+            {
+                "tableName": "tb2",
+                "fileName": "",
+                "rowLength": "",
+                "structure": [
+                    {
+                        "attributeName": "Attribute Name",
+                        "type": "Attribute Type",
+                        "length": "Attribute Length",
+                        "isNull": "Attribute Is Null"
+                    }
+                ],
+                "primaryKeys": [
+                    "Primary key name"
+                ],
+                "foreignKeys": [
+                    {
+                        "nameForeignKey": "Name2",
+                        "tableReference": "tb",
+                        "keyReference": "Name"
+                    }
+                ],
+                "indexFiles": []
+            }
+        ]
+    }
+]
