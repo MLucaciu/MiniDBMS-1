@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import redis.clients.jedis.Jedis;
 import minidbms.minidbms.Models.IndexFile;
 import minidbms.minidbms.Models.Table;
@@ -39,30 +40,26 @@ public class DBMSController implements TransactionWorker{
 
     private List<minidbms.minidbms.Models.Database> databases = new ArrayList<>();
     private ObjectMapper mapper = new ObjectMapper();
-    Jedis jedis;
 
     private Environment env;
     private ClassCatalog catalog;
     private Database db;
-    private SortedMap<Integer, String> map;
+    private SortedMap<String, String> map;
 
     private String PATH_TO_JSON = "D:\\Faculty\\minidbms\\database.json";
 
-    private static final String[] INT_NAMES = {
-            "Hello", "Database", "World",
-    };
+    public DBMSController() throws Exception {
+        EnvironmentConfig envConfig = new EnvironmentConfig();
+        envConfig.setTransactional(true);
+        envConfig.setAllowCreate(true);
+        Environment env = new Environment(new File(".\\database"), envConfig);
 
-    /**
-     *
-     */
-    public DBMSController(Environment env) throws Exception {
         this.env = env;
-        open();
+        open("tableFile");
     }
 
     /** Opens the database and creates the Map. */
-    private void open()
-            throws Exception {
+    private void open(String dbName) throws Exception {
 
         // use a generic database configuration
         DatabaseConfig dbConfig = new DatabaseConfig();
@@ -74,18 +71,17 @@ public class DBMSController implements TransactionWorker{
         catalog = new StoredClassCatalog(catalogDb);
 
         // use Integer tuple binding for key entries
-        TupleBinding<Integer> keyBinding =
-                TupleBinding.getPrimitiveBinding(Integer.class);
+        TupleBinding<String> keyBinding =
+                TupleBinding.getPrimitiveBinding(String.class);
 
         // use String serial binding for data entries
         SerialBinding<String> dataBinding =
                 new SerialBinding<String>(catalog, String.class);
 
-        this.db = env.openDatabase(null, "helloworld", dbConfig);
+        this.db = env.openDatabase(null, dbName, dbConfig);
 
         // create a map view of the database
-        this.map = new StoredSortedMap<Integer, String>
-                (db, keyBinding, dataBinding, true);
+        this.map = new StoredSortedMap<String, String>(db, keyBinding, dataBinding, true);
     }
 
     /** Closes the database. */
@@ -127,8 +123,8 @@ public class DBMSController implements TransactionWorker{
                               @RequestBody(required = false) String table){
         String result;
         Table newTable;
-        Jedis jedis = new Jedis("localhost");
-        Map tablesData4 = jedis.hgetAll("ce");
+        //Jedis jedis = new Jedis("localhost");
+        //Map tablesData4 = jedis.hgetAll("ce");
         try {
             result = java.net.URLDecoder.decode(table.substring(table.indexOf("&")+1), "UTF-8");
             result = result.substring(0, result.length() - 1);
@@ -142,7 +138,6 @@ public class DBMSController implements TransactionWorker{
             HashMap hm = new HashMap <String,String>();
             hm.put("database",database.getDbName());
 
-            jedis.hmset(newTable.getTableName(), hm);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -156,7 +151,7 @@ public class DBMSController implements TransactionWorker{
         if(database != null){
             this.databases.remove(database);
             mapper.writeValue(new File(PATH_TO_JSON), databases );
-    }
+        }
 
         return "Success";
     }
@@ -214,22 +209,22 @@ public class DBMSController implements TransactionWorker{
         String result = java.net.URLDecoder.decode(values.substring(values.lastIndexOf("&")+1), "UTF-8");
         result = result.substring(1, result.length() - 2);
         String[] entities = result.split("#");
-        Jedis jedis = new Jedis("localhost");
-        Map tablesData4 = jedis.hgetAll("ce");
+        //Jedis jedis = new Jedis("localhost");
+        //Map tablesData4 = jedis.hgetAll("ce");
 
         minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
         Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
 
-        Map tablesData = jedis.hgetAll(tableName);
+        //Map tablesData = jedis.hgetAll(tableName);
 
         //check if the primary key is unique
         int noPrimaryKeys = table.getPrimaryKeys().size();
         for(int i = 0; i < noPrimaryKeys ; i++){
             String primaryKey = entities[i];
             //split("#")
-            if(((HashMap) tablesData).keySet().stream().filter(e -> e.toString().contains(primaryKey)).count() != 0){
+            /*if(((HashMap) tablesData).keySet().stream().filter(e -> e.toString().contains(primaryKey)).count() != 0){
                 return "Primary key is not unique";
-            }
+            }*/
         }
 
         //check for foreign keys
@@ -282,9 +277,7 @@ public class DBMSController implements TransactionWorker{
         for(int i = noPrimaryKeys+1; i<entities.length; i++){
             valuesEntity += "#" + entities[i];
         }
-        tablesData.put(primaryKey,valuesEntity);
-
-        jedis.hmset(tableName,tablesData);
+        map.put(primaryKey,valuesEntity);
 
         return "Success!";
     }
@@ -337,29 +330,5 @@ public class DBMSController implements TransactionWorker{
 
     @Override
     public void doWork() throws Exception {
-        writeAndRead();
-    }
-
-    /** Writes and reads the database via the Map. */
-    private void writeAndRead() {
-
-        // check for existing data
-        Integer key = new Integer(0);
-        String val = map.get(key);
-        if (val == null) {
-            System.out.println("Writing data");
-            // write in reverse order to show that keys are sorted
-            for (int i = INT_NAMES.length - 1; i >= 0; i -= 1) {
-                map.put(new Integer(i), INT_NAMES[i]);
-            }
-        }
-        // get iterator over map entries
-        Iterator<Map.Entry<Integer, String>> iter = map.entrySet().iterator();
-        System.out.println("Reading data");
-        while (iter.hasNext()) {
-            Map.Entry<Integer, String> entry = iter.next();
-            System.out.println(entry.getKey().toString() + ' ' +
-                    entry.getValue());
-        }
     }
 }

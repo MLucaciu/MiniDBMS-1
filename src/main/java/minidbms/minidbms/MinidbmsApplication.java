@@ -6,11 +6,13 @@ import com.sleepycat.je.EnvironmentConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import java.io.File;
 
 @SpringBootApplication
-@ComponentScan({"com.sleepycat.je"})
 public class MinidbmsApplication {
 
     public static void main(String[] args) throws Exception {
@@ -23,7 +25,7 @@ public class MinidbmsApplication {
         Environment env = new Environment(new File(".\\database"), envConfig);
 
         // create the application and run a transaction
-        DBMSController worker = new DBMSController(env);
+        DBMSController worker = new DBMSController();
         TransactionRunner runner = new TransactionRunner(env);
         try {
             // open and access the database within a transaction

@@ -66,6 +66,7 @@
             <version>4.0.92</version>
         </dependency>
 
+
     </dependencies>
 
     <build>
@@ -76,6 +77,13 @@
             </plugin>
         </plugins>
     </build>
+
+    <mvc:cors>
+        <mvc:mapping path="/**"
+                     allowed-origins="*"
+                     allowed-headers="Content-Type, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Authorization, X-Requested-With, requestId, Correlation-Id"
+                     allowed-methods="GET, PUT, POST, DELETE"/>
+    </mvc:cors>
 
 
 </project>
