@@ -1,8 +1,13 @@
 package minidbms.minidbms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.*;
+import com.sleepycat.persist.EntityStore;
+import com.sleepycat.persist.PrimaryIndex;
+import com.sleepycat.persist.SecondaryIndex;
+import com.sleepycat.persist.StoreConfig;
 import minidbms.minidbms.Models.Attribute;
+import minidbms.minidbms.Models.IndexAccesor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -29,14 +34,12 @@ import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.collections.StoredSortedMap;
 import com.sleepycat.collections.TransactionRunner;
 import com.sleepycat.collections.TransactionWorker;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.Environment;
 
 
 @RestController
 @CrossOrigin(origins = "*")
 public class DBMSController implements TransactionWorker{
+
 
     private List<minidbms.minidbms.Models.Database> databases = new ArrayList<>();
     private ObjectMapper mapper = new ObjectMapper();
@@ -46,13 +49,13 @@ public class DBMSController implements TransactionWorker{
     private Database db;
     private SortedMap<String, String> map;
 
-    private String PATH_TO_JSON = "D:\\Faculty\\minidbms\\database.json";
+    private String PATH_TO_JSON = "D:\\chestii\\1 - isgbd\\database.json";
 
     public DBMSController() throws Exception {
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setTransactional(true);
         envConfig.setAllowCreate(true);
-        Environment env = new Environment(new File(".\\database"), envConfig);
+        Environment env = new Environment(new File("."), envConfig);
 
         this.env = env;
         open("tableFile");
@@ -180,6 +183,24 @@ public class DBMSController implements TransactionWorker{
     public String createIndex(@RequestParam(value="dbName", required = true) String dbName,
                               @RequestParam(value="tableName", required = true) String tableName,
                               @RequestBody(required = false) String indexFile){
+
+        ArrayList<String> indexAttributes = new ArrayList<String>();
+        indexAttributes.add("ceva");
+        PrimaryIndex<String,IndexFile> indexFileIndex;
+
+        EnvironmentConfig envConfig = new EnvironmentConfig();
+        envConfig.setAllowCreate(true);
+        envConfig.setTransactional(true);
+        env = new Environment(new File("."), envConfig);
+
+        StoreConfig storeConfig = new StoreConfig();
+        storeConfig.setAllowCreate(true);
+        storeConfig.setTransactional(true);
+
+        EntityStore store = new EntityStore(env, tableName + "Index", storeConfig);
+        IndexAccesor ia = new IndexAccesor(store);
+        ia.indexFileIndex.put
+                (new IndexFile(tableName + "Index", "30", "1", "primary", indexAttributes));
         String result;
         IndexFile newIndexFile;
         try {

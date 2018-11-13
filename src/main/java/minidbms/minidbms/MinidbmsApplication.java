@@ -22,7 +22,7 @@ public class MinidbmsApplication {
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setTransactional(true);
         envConfig.setAllowCreate(true);
-        Environment env = new Environment(new File(".\\database"), envConfig);
+        Environment env = new Environment(new File("."), envConfig);
 
         // create the application and run a transaction
         DBMSController worker = new DBMSController();
