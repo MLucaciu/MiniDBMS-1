@@ -1,5 +1,7 @@
 package minidbms.minidbms.Models;
 
+import com.sleepycat.persist.model.Entity;
+import com.sleepycat.persist.model.PrimaryKey;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,7 +10,9 @@ import java.util.List;
 
 @Getter
 @Setter
+@Entity
 public class IndexFile implements Serializable {
+    @PrimaryKey
     private String indexName;
     private String keyLength;
     private String isUnique;

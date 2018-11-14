@@ -208,12 +208,13 @@ public class DBMSController implements TransactionWorker{
             result = result.substring(0, result.length() - 1);
             newIndexFile = new ObjectMapper().readValue(result, IndexFile.class);
             minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
-            Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
-            if(table.getIndexFiles().stream().filter(ind -> ind.getIndexName().equals(newIndexFile.getIndexName())).count() != 0){
-                return "Index File already exists!";
-            }
-            table.addindexFile(newIndexFile);
-            mapper.writeValue(new File(PATH_TO_JSON), databases );
+            //Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
+//            if(table.getIndexFiles().stream().filter(ind -> ind.getIndexName().equals(newIndexFile.getIndexName())).count() != 0){
+//                return "Index File already exists!";
+//            }
+            //table.addindexFile(newIndexFile);
+            map.put(tableName + "Index",result);
+            mapper.writeValue(new File(PATH_TO_JSON), database );
         } catch (IOException e) {
             e.printStackTrace();
         }
