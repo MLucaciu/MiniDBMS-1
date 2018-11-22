@@ -319,6 +319,13 @@ public class DBMSController implements TransactionWorker{
         return table.getPrimaryKeys();
     }
 
+    @RequestMapping(value = "/getTable", method = RequestMethod.GET)
+    public Table getTable(@RequestParam(value="dbName", required = true) String dbName,
+                          @RequestParam(value="tableName", required = true) String tableName){
+        minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
+        return table;
+    }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public String delete(@RequestParam(value="dbName", required = true) String dbName,
