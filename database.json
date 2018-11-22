@@ -1,1 +1,1 @@
-null
+[{"dbName":"db","tables":[{"tableName":"tre","fileName":"","rowLength":"","structure":[{"attributeName":"Der","type":"String","length":"13","isNull":"False"},{"attributeName":"DRF","type":"String","length":"10","isNull":"False"}],"primaryKeys":["Der"],"foreignKeys":[],"indexFiles":[]}]}]
