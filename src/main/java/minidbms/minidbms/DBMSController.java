@@ -34,7 +34,7 @@ public class DBMSController implements TransactionWorker{
     private List<minidbms.minidbms.Models.Database> databases = new ArrayList<>();
     private ObjectMapper mapper = new ObjectMapper();
 
-    private String PATH_TO_JSON = "D:\\Faculty\\minidbms\\database.json";
+    private String PATH_TO_JSON = "D:\\chestii\\1 - isgbd\\database.json";
 
     private Environment env;
     private StoredClassCatalog javaCatalog;
@@ -137,25 +137,11 @@ public class DBMSController implements TransactionWorker{
     @RequestMapping(value = "/createIndex", method = RequestMethod.POST)
     public String createIndex(@RequestParam(value="dbName", required = true) String dbName,
                               @RequestParam(value="tableName", required = true) String tableName,
-                              @RequestBody(required = false) String indexFile){
+                              @RequestBody(required = false) String indexFile) throws Exception {
 
-        ArrayList<String> indexAttributes = new ArrayList<String>();
-        indexAttributes.add("ceva");
+
         PrimaryIndex<String,IndexFile> indexFileIndex;
 
-        EnvironmentConfig envConfig = new EnvironmentConfig();
-        envConfig.setAllowCreate(true);
-        envConfig.setTransactional(true);
-        env = new Environment(new File("."), envConfig);
-
-        StoreConfig storeConfig = new StoreConfig();
-        storeConfig.setAllowCreate(true);
-        storeConfig.setTransactional(true);
-
-        EntityStore store = new EntityStore(env, tableName + "Index", storeConfig);
-        IndexAccesor ia = new IndexAccesor(store);
-        ia.indexFileIndex.put
-                (new IndexFile(tableName + "Index", "30", "1", "primary", indexAttributes));
         String result;
         IndexFile newIndexFile;
         try {
@@ -167,13 +153,31 @@ public class DBMSController implements TransactionWorker{
 //            if(table.getIndexFiles().stream().filter(ind -> ind.getIndexName().equals(newIndexFile.getIndexName())).count() != 0){
 //                return "Index File already exists!";
 //            }
+            //create file for new table
+            // environment is transactional
+            EnvironmentConfig envConfig = new EnvironmentConfig();
+            envConfig.setTransactional(true);
+            envConfig.setAllowCreate(true);
+            String fileName = database.getDbName() + "-" + tableName + "Index";
+            Environment env = new Environment(new File("."), envConfig);
             //table.addindexFile(newIndexFile);
             //map.put(tableName + "Index",result);
             mapper.writeValue(new File(PATH_TO_JSON), database );
+            // create the application and run a transaction
+            DbEnviroment worker = new DbEnviroment(env, fileName);
+            TransactionRunner runner = new TransactionRunner(env);
+            try {
+                // open and access the database within a transaction
+                runner.run(worker);
+            } finally {
+                // close the database outside the transaction
+                worker.close();
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return "Success!";
+        return "Index file successfully created!";
     }
 
     @RequestMapping(value = "/insert", method = RequestMethod.POST)
