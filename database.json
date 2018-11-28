@@ -1,1 +1,1 @@
-{"dbName":"ffff","tables":[{"tableName":"tabel","fileName":"","rowLength":"","structure":[{"attributeName":"ceva","type":"integer","length":"1","isNull":"1"}],"primaryKeys":["ceva"],"foreignKeys":[],"indexFiles":[]}]}
+[{"dbName":"kkk","tables":[{"tableName":"fede","fileName":"","rowLength":"","structure":[{"attributeName":"id","type":"1","length":"1","isNull":"1"},{"attributeName":"nume","type":"string","length":"1","isNull":"1"}],"primaryKeys":["id"],"foreignKeys":[],"indexFiles":[]}]}]

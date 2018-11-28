@@ -20,10 +20,7 @@ import redis.clients.jedis.Jedis;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -392,5 +389,104 @@ public class DBMSController implements TransactionWorker{
 
     @Override
     public void doWork() throws Exception {
+    }
+
+    /**
+     *
+     * @param tableName
+     * @param dbName
+     * @param columns
+     * @param condition
+     * @return
+     * @throws IOException
+     */
+    @RequestMapping(value = "/select", method = RequestMethod.GET)
+    public String select(@RequestParam(value="dbName", required = true) String dbName,
+                            @RequestParam(value="tableName", required = true) String tableName,
+                            @RequestParam(value="columns", required = true) String columns,
+                             @RequestParam(value="condition", required = true) String condition)
+    throws IOException {
+
+        minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
+
+        String[] cols = columns.split(",");
+//        for (String col : cols) {
+//            System.out.println(col);
+//        }
+
+        EnvironmentConfig envConfig = new EnvironmentConfig();
+        envConfig.setTransactional(true);
+        envConfig.setAllowCreate(true);
+        env = new Environment(new File("."), envConfig);
+
+        // Set the Berkeley DB config for opening all stores.
+        DatabaseConfig dbConfig = new DatabaseConfig();
+        dbConfig.setTransactional(true);
+        dbConfig.setAllowCreate(true);
+
+        // Create the Serial class catalog.  This holds the serialized class
+        // format for all database records of serial format.
+        //
+        com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + tableName, dbConfig);
+        javaCatalog = new StoredClassCatalog(catalogDb);
+        Transaction txn = env.beginTransaction(null, null);
+
+//        DatabaseEntry keyEntry = new DatabaseEntry();
+//        DatabaseEntry dataEntry = new DatabaseEntry();
+//
+//        StringBinding.stringToEntry(tableName, keyEntry);
+//        StringBinding.stringToEntry(valuesEntity, dataEntry);
+//
+//        OperationStatus status = catalogDb.get(txn, keyEntry, dataEntry,LockMode.READ_COMMITTED);
+//        txn.commit();
+
+//        /* retrieve the data */
+        Cursor cursor = catalogDb.openCursor(null, null);
+//
+//        while (cursor.getNext(keyEntry, dataEntry, LockMode.DEFAULT) ==
+//                OperationStatus.SUCCESS) {
+//            System.out.println("key=" +
+//                    StringBinding.entryToString(keyEntry) +
+//                    " data=" +
+//                    StringBinding.entryToString(dataEntry));
+//        }
+//        cursor.close();
+
+//TODO
+
+        DatabaseEntry foundKey = new DatabaseEntry();
+        DatabaseEntry foundData = new DatabaseEntry();
+        String[] cond = condition.split("=");
+        String res = "";
+        while (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) ==
+                OperationStatus.SUCCESS) {
+
+String cddeva =  foundKey.toString();
+String altccceva = foundData.toString();
+            String keyString = new String(foundKey.getData(),"UTF-8");
+            String dataString = new String(foundData.getData(),"UTF-8");
+            boolean contains = Arrays.stream(cols).anyMatch(keyString::equals);
+            res = res + keyString + " " + dataString + '\n';
+//            System.out.println("Key | Data : " + keyString + " | " +
+//                    dataString + "");
+        }
+        cursor.close();
+        return res;
+    }
+
+    /**
+     * Work in progress
+     * @param digest
+     * @return
+     */
+    private static String toHexadecimal(byte[] digest){
+        String hash = "";
+        for(byte aux : digest) {
+            int b = aux & 0xff;
+            if (Integer.toHexString(b).length() == 1) hash += "0";
+            hash += Integer.toHexString(b);
+        }
+        return hash;
     }
 }
