@@ -466,8 +466,12 @@ String cddeva =  foundKey.toString();
 String altccceva = foundData.toString();
             String keyString = new String(foundKey.getData(),"UTF-8");
             String dataString = new String(foundData.getData(),"UTF-8");
+            //TODO : contains is always false, because of non-UTF8 characters
             boolean contains = Arrays.stream(cols).anyMatch(keyString::equals);
-            res = res + keyString + " " + dataString + '\n';
+            if (contains && keyString.equals(cond[0]) && dataString.equals(cond[1])) {
+                res = res + keyString + " " + dataString + '\n';
+            }
+           // res = res + keyString + " " + dataString + '\n';
 //            System.out.println("Key | Data : " + keyString + " | " +
 //                    dataString + "");
         }
