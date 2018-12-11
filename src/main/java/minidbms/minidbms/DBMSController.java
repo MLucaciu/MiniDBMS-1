@@ -36,6 +36,13 @@ public class DBMSController implements TransactionWorker{
     private Environment env;
     private StoredClassCatalog javaCatalog;
 
+    /**
+    *   @TODO
+    *   @Major Refactor - WIP -
+    */
+    private  Environment myDbEnvironment = null;
+    private Database myDatabase = null;
+    
     public DBMSController(){
     }
 
@@ -47,6 +54,29 @@ public class DBMSController implements TransactionWorker{
         }
         databases.add(new minidbms.minidbms.Models.Database(dbName));
         mapper.writeValue(new File(PATH_TO_JSON), databases );
+           /**
+    *   @TODO
+    *   @Major Refactor - WIP -
+    */
+         try {
+            // Open the environment, creating one if it does not exist
+            EnvironmentConfig envConfig = new EnvironmentConfig();
+            envConfig.setAllowCreate(true);
+            myDbEnvironment = new Environment(new File("/tmp/dbEnv"),
+                                              envConfig);
+ 
+            // Open the database, creating one if it does not exist
+            DatabaseConfig dbConfig = new DatabaseConfig();
+            dbConfig.setAllowCreate(true);
+            myDatabase = myDbEnvironment.openDatabase(null,
+                                             dbName, dbConfig);
+        } catch (DatabaseException dbe) {
+           return "Error";
+        }
+           /**
+    *   @TODO
+    *   @Major Refactor - WIP -
+    */
         return "Success!";
     }
 
@@ -58,8 +88,45 @@ public class DBMSController implements TransactionWorker{
     @RequestMapping(value = "/createTable", method = RequestMethod.POST)
     public String createTable(@RequestParam(value="dbName", required = true) String dbName,
                               @RequestBody(required = false) String table) throws Exception {
+        /**
+    *   @TODO
+    *   @Major Refactor - WIP -
+    */
         String result;
         Table newTable;
+        
+        try {
+             result = java.net.URLDecoder.decode(table.substring(table.indexOf("&")+1), "UTF-8");
+            result = result.substring(0, result.length() - 1);
+            newTable = new ObjectMapper().readValue(result, Table.class);
+            minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+            if(database.getTables().stream().filter(tb -> tb.getTableName().equals(newTable.getTableName())).count() != 0){
+                return "Table already exists!";
+            }
+            
+            // Open the environment, creating one if it does not exist
+            EnvironmentConfig envConfig = new EnvironmentConfig();
+            envConfig.setAllowCreate(true);
+            myDbEnvironment = new Environment(new File("/tmp/dbEnv"),
+                                              envConfig);
+ 
+            // Open the database, creating one if it does not exist
+            DatabaseConfig dbConfig = new DatabaseConfig();
+            dbConfig.setAllowCreate(true);
+            myDatabase = myDbEnvironment.openDatabase(null,
+                                             dbName, dbConfig);
+        } catch (DatabaseException dbe) {
+            //  Exception handling
+        }
+        
+        return "Succes";
+        
+         /**
+    *   @TODO
+    *   @Major Refactor - WIP -
+    */
+        
+
         //Jedis jedis = new Jedis("localhost");
         //Map tablesData4 = jedis.hgetAll("ce");
         try {
