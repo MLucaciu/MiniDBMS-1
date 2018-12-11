@@ -62,14 +62,8 @@ public class DBMSController implements TransactionWorker{
             // Open the environment, creating one if it does not exist
             EnvironmentConfig envConfig = new EnvironmentConfig();
             envConfig.setAllowCreate(true);
-            myDbEnvironment = new Environment(new File("/tmp/dbEnv"),
+            myDbEnvironment = new Environment(new File("/tmp/" + dbName),
                                               envConfig);
- 
-            // Open the database, creating one if it does not exist
-            DatabaseConfig dbConfig = new DatabaseConfig();
-            dbConfig.setAllowCreate(true);
-            myDatabase = myDbEnvironment.openDatabase(null,
-                                             dbName, dbConfig);
            if (myDatabase != null) {
                 myDatabase.close();
             }
@@ -119,21 +113,21 @@ public class DBMSController implements TransactionWorker{
             // Open the environment, creating one if it does not exist
             EnvironmentConfig envConfig = new EnvironmentConfig();
             envConfig.setAllowCreate(true);
-            myDbEnvironment = new Environment(new File("/tmp/dbEnv"),
+            myDbEnvironment = new Environment(new File("/tmp/" + dbName),
                                               envConfig);
  
             // Open the database, creating one if it does not exist
             DatabaseConfig dbConfig = new DatabaseConfig();
             dbConfig.setAllowCreate(true);
-            myDatabase = myDbEnvironment.openDatabase(null,dbName, dbConfig);
+            myDatabase = myDbEnvironment.openDatabase(null,table, dbConfig);
             
-            //add table to berkley
-            String key = table;
-            String data = result;
+           
+          //  String key = table;
+          //  String data = result;
             
-             DatabaseEntry theKey = new DatabaseEntry(key.getBytes("UTF-8"));
-             DatabaseEntry theData = new DatabaseEntry(data.getBytes("UTF-8"));
-             myDatabase.put(null, theKey, theData);
+            // DatabaseEntry theKey = new DatabaseEntry(key.getBytes("UTF-8"));
+           //  DatabaseEntry theData = new DatabaseEntry(data.getBytes("UTF-8"));
+           //  myDatabase.put(null, theKey, theData);
             
           if (myDatabase != null) {
                 myDatabase.close();
