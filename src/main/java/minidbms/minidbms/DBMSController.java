@@ -17,9 +17,7 @@ import org.json.JSONException;
 import org.springframework.web.bind.annotation.*;
 import redis.clients.jedis.Jedis;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,10 +29,17 @@ public class DBMSController implements TransactionWorker{
     private List<minidbms.minidbms.Models.Database> databases = new ArrayList<>();
     private ObjectMapper mapper = new ObjectMapper();
 
-    private String PATH_TO_JSON = "D:\\chestii\\1 - isgbd\\database.json";
+    private String PATH_TO_JSON = "D:\\Faculty\\minidbms\\database.json";
 
     private Environment env;
     private StoredClassCatalog javaCatalog;
+
+    String[][] records1 = {{"27", "Jonah"}, {"18", "Alan"}, {"28", "Glory"},
+            {"18", "Popeye"}, {"28", "Alan"}};
+
+    String[][] records2 = {{"Jonah", "Whales"}, {"Jonah", "Spiders"},
+            {"Alan", "Ghosts"}, {"Alan", "Zombies"}, {"Glory", "Buffy"},
+            {"Bob", "foo"}};
 
     public DBMSController(){
     }
@@ -159,7 +164,7 @@ public class DBMSController implements TransactionWorker{
             Environment env = new Environment(new File("."), envConfig);
             //table.addindexFile(newIndexFile);
             //map.put(tableName + "Index",result);
-            mapper.writeValue(new File(PATH_TO_JSON), database );
+            mapper.writeValue(new File(PATH_TO_JSON), databases );
             // create the application and run a transaction
             DbEnviroment worker = new DbEnviroment(env, fileName);
             TransactionRunner runner = new TransactionRunner(env);
@@ -492,5 +497,80 @@ String altccceva = foundData.toString();
             hash += Integer.toHexString(b);
         }
         return hash;
+    }
+
+    @RequestMapping(value = "/selectHashJoin", method = RequestMethod.GET)
+    public String selectHashJoin(@RequestParam(value="dbName", required = true) String dbName,
+                         @RequestParam(value="tableName", required = true) String tableName,
+                         @RequestParam(value="tableNameJoin", required = true) String tableNameJoin,
+                         @RequestParam(value = "joinColumn", required = true) String joinColumn,
+                         @RequestParam(value="columns", required = true) String columns,
+                         @RequestParam(value="condition", required = true) String condition)
+            throws IOException {
+
+        List<String[][]> result = new ArrayList<>();
+        Map<String, List<String[]>> map = new HashMap<>();
+
+        for (String[] record : records1) {
+            List<String[]> v = map.getOrDefault(record[1], new ArrayList<>());
+            v.add(record);
+            map.put(record[1], v);
+        }
+
+        for (String[] record : records2) {
+            List<String[]> lst = map.get(record[2]);
+            if (lst != null) {
+                lst.stream().forEach(r -> {
+                    result.add(new String[][]{r, record});
+                });
+            }
+        }
+        return "";
+
+    }
+
+    @RequestMapping(value = "/selectNestedLoopJoin", method = RequestMethod.GET)
+    public String selectNestedLoopJoin(@RequestParam(value="dbName", required = true) String dbName,
+                                 @RequestParam(value="tableName", required = true) String tableName,
+                                 @RequestParam(value="tableNameJoin", required = true) String tableNameJoin,
+                                 @RequestParam(value = "joinColumn", required = true) String joinColumn,
+                                 @RequestParam(value="columns", required = true) String columns,
+                                 @RequestParam(value="condition", required = true) String condition)
+            throws IOException {
+
+        FileWriter writer = new FileWriter("");
+        // reverse join relation to reduce IOS
+        //if (this.file2size < this.file1size) {
+
+        //}
+
+
+        BufferedReader file1br = new BufferedReader(new FileReader(""));
+        // Skip 1st line
+        file1br.readLine();
+        ArrayList<String[]> r1 = new ArrayList<>();
+        Object br2 = null;
+        boolean reverse = false;
+        boolean headerRow = true;
+        while (true) {
+
+            if (headerRow) {
+
+                BufferedReader brheder = new BufferedReader(new FileReader(""));
+                //ArrayList<String[]> r2header = ReadCSV.readFileChunk(brheder, 2);
+                if (false){
+                    headerRow = false;
+            }
+
+            //br2 = this.NLJjoinChunks(br2, writer, r1, reverse);
+            writer.flush();
+            reverse = !reverse;
+
+        }
+
+        writer.close();
+
+        return "";
+
     }
 }

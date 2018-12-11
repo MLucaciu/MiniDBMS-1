@@ -1,1 +1,1 @@
-[{"dbName":"kkk","tables":[{"tableName":"fede","fileName":"","rowLength":"","structure":[{"attributeName":"id","type":"1","length":"1","isNull":"1"},{"attributeName":"nume","type":"string","length":"1","isNull":"1"}],"primaryKeys":["id"],"foreignKeys":[],"indexFiles":[]}]}]
+[{"dbName":"dataBase","tables":[{"tableName":"Cats","fileName":"","rowLength":"","structure":[{"attributeName":"Name","type":"String","length":"10","isNull":"False"},{"attributeName":"Years","type":"Integer","length":"10","isNull":"False"}],"primaryKeys":["Name"],"foreignKeys":[],"indexFiles":[]}]}]
