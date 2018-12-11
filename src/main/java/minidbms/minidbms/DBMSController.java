@@ -70,9 +70,18 @@ public class DBMSController implements TransactionWorker{
             dbConfig.setAllowCreate(true);
             myDatabase = myDbEnvironment.openDatabase(null,
                                              dbName, dbConfig);
+           if (myDatabase != null) {
+                myDatabase.close();
+            }
+            if (myDbEnvironment != null) {
+                myDbEnvironment.close();
+            }
         } catch (DatabaseException dbe) {
            return "Error";
         }
+  
+
+
            /**
     *   @TODO
     *   @Major Refactor - WIP -
@@ -103,6 +112,9 @@ public class DBMSController implements TransactionWorker{
             if(database.getTables().stream().filter(tb -> tb.getTableName().equals(newTable.getTableName())).count() != 0){
                 return "Table already exists!";
             }
+            //write to json
+             database.addTable(newTable);
+            mapper.writeValue(new File(PATH_TO_JSON), databases );
             
             // Open the environment, creating one if it does not exist
             EnvironmentConfig envConfig = new EnvironmentConfig();
@@ -113,8 +125,23 @@ public class DBMSController implements TransactionWorker{
             // Open the database, creating one if it does not exist
             DatabaseConfig dbConfig = new DatabaseConfig();
             dbConfig.setAllowCreate(true);
-            myDatabase = myDbEnvironment.openDatabase(null,
-                                             dbName, dbConfig);
+            myDatabase = myDbEnvironment.openDatabase(null,dbName, dbConfig);
+            
+            //add table to berkley
+            String key = table;
+            String data = result;
+            
+             DatabaseEntry theKey = new DatabaseEntry(key.getBytes("UTF-8"));
+             DatabaseEntry theData = new DatabaseEntry(data.getBytes("UTF-8"));
+             myDatabase.put(null, theKey, theData);
+            
+          if (myDatabase != null) {
+                myDatabase.close();
+            }
+
+            if (myDbEnvironment != null) {
+                myDbEnvironment.close();
+            }
         } catch (DatabaseException dbe) {
             //  Exception handling
         }
