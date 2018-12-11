@@ -558,19 +558,20 @@ String altccceva = foundData.toString();
 
                 BufferedReader brheder = new BufferedReader(new FileReader(""));
                 //ArrayList<String[]> r2header = ReadCSV.readFileChunk(brheder, 2);
-                if (false){
+                if (false) {
                     headerRow = false;
+                }
+
+                //br2 = this.NLJjoinChunks(br2, writer, r1, reverse);
+                writer.flush();
+                reverse = !reverse;
+
             }
 
-            //br2 = this.NLJjoinChunks(br2, writer, r1, reverse);
-            writer.flush();
-            reverse = !reverse;
+            writer.close();
+
+            return "";
 
         }
-
-        writer.close();
-
-        return "";
-
     }
 }
