@@ -209,14 +209,14 @@ public class DBMSController implements TransactionWorker{
         envConfig.setAllowCreate(true);
         myDbEnvironment = new Environment(new File("/tmp/" + dbName), envConfig);
 
-        // Open the database, creating one if it does not exist
+        // create index table
         DatabaseConfig dbConfig = new DatabaseConfig();
         dbConfig.setAllowCreate(true);
         com.sleepycat.je.Database myDatabase;
         myDatabase = myDbEnvironment.openDatabase(null,name + "Index", dbConfig);
 
         //add to index
-        com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + tableName, dbConfig);
+        com.sleepycat.je.Database catalogDb = env.openDatabase(null,tableName, dbConfig);
         javaCatalog = new StoredClassCatalog(catalogDb);
 
         Transaction txn = env.beginTransaction(null, null);
@@ -226,25 +226,27 @@ public class DBMSController implements TransactionWorker{
 
 
         //@WIP
-      /*   *//* retrieve the data *//*
+        *//* retrieve the data *//*
         Cursor cursor = catalogDb.openCursor(null, null);
 
         while (cursor.getNext(keyEntry, dataEntry, LockMode.DEFAULT) ==
                 OperationStatus.SUCCESS) {
 
-            StringBinding.stringToEntry(primaryKey, keyEntry);
-            StringBinding.stringToEntry(valuesEntity, dataEntry);
+            //String value = StringBinding.entryToString(dataEntry);
+            
+           // StringBinding.stringToEntry(primaryKey, keyEntry);
+           // StringBinding.stringToEntry(valuesEntity, dataEntry);
 
-            OperationStatus status = catalogDb.put(txn, keyEntry, dataEntry);
+           // OperationStatus status = catalogDb.put(txn, keyEntry, dataEntry);
 
-            txn.commit();
+           // txn.commit();
 
             System.out.println("key=" +
                     StringBinding.entryToString(keyEntry) +
                     " data=" +
                     StringBinding.entryToString(dataEntry));
         }
-        cursor.close();*/
+        cursor.close();
         //@WIP
 
 //
