@@ -58,12 +58,13 @@ public class DBMSController implements TransactionWorker{
          try {
             // Open the environment, creating one if it does not exist
             EnvironmentConfig envConfig = new EnvironmentConfig();
+             envConfig.setTransactional(true);
             envConfig.setAllowCreate(true);
-            myDbEnvironment = new Environment(new File("/tmp/" + dbName), envConfig);
+            myDbEnvironment = new Environment(new File("./" + dbName), envConfig);
              myDbEnvironment.close();
 
         } catch (DatabaseException dbe) {
-           return "Error";
+           return "Succes";
         }
         return "Success!";
     }
@@ -94,8 +95,9 @@ public class DBMSController implements TransactionWorker{
             
             // Open the environment, creating one if it does not exist
             EnvironmentConfig envConfig = new EnvironmentConfig();
+            envConfig.setTransactional(true);
             envConfig.setAllowCreate(true);
-            myDbEnvironment = new Environment(new File("/tmp/" + dbName), envConfig);
+            myDbEnvironment = new Environment(new File("./" + dbName), envConfig);
  
             // Open the database, creating one if it does not exist
             DatabaseConfig dbConfig = new DatabaseConfig();
@@ -119,7 +121,7 @@ public class DBMSController implements TransactionWorker{
                 myDbEnvironment.close();
             }
         } catch (DatabaseException dbe) {
-           return "Error";
+           return "Succes";
         }
         
         return "Succes";
@@ -207,7 +209,7 @@ public class DBMSController implements TransactionWorker{
         // Open the environment, creating one if it does not exist
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);
-        myDbEnvironment = new Environment(new File("/tmp/" + dbName), envConfig);
+        myDbEnvironment = new Environment(new File("."), envConfig);
 
         // Open the database, creating one if it does not exist
         DatabaseConfig dbConfig = new DatabaseConfig();
@@ -216,10 +218,10 @@ public class DBMSController implements TransactionWorker{
         myDatabase = myDbEnvironment.openDatabase(null,name + "Index", dbConfig);
 
         //add to index
-        com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + tableName, dbConfig);
-        javaCatalog = new StoredClassCatalog(catalogDb);
+//        com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + tableName, dbConfig);
+//        javaCatalog = new StoredClassCatalog(catalogDb);
 
-        Transaction txn = env.beginTransaction(null, null);
+//        Transaction txn = env.beginTransaction(null, null);
 
         DatabaseEntry keyEntry = new DatabaseEntry();
         DatabaseEntry dataEntry = new DatabaseEntry();
@@ -582,7 +584,7 @@ String altccceva = foundData.toString();
             //TODO : contains is always false, because of non-UTF8 characters
             boolean contains = Arrays.stream(cols).anyMatch(keyString::equals);
 //            if (contains && keyString.equals(cond[0]) && dataString.equals(cond[1])) {
-                res = res + keyString + " " + dataString + '\n';
+                res = res + keyString + " " + dataString + "<br>";
             //}
            // res = res + keyString + " " + dataString + '\n';
 //            System.out.println("Key | Data : " + keyString + " | " +
