@@ -54,32 +54,17 @@ public class DBMSController implements TransactionWorker{
         }
         databases.add(new minidbms.minidbms.Models.Database(dbName));
         mapper.writeValue(new File(PATH_TO_JSON), databases );
-           /**
-    *   @TODO
-    *   @Major Refactor - WIP -
-    */
+
          try {
             // Open the environment, creating one if it does not exist
             EnvironmentConfig envConfig = new EnvironmentConfig();
             envConfig.setAllowCreate(true);
-            myDbEnvironment = new Environment(new File("/tmp/" + dbName),
-                                              envConfig);
-           if (myDatabase != null) {
-                myDatabase.close();
-            }
-            if (myDbEnvironment != null) {
-                myDbEnvironment.close();
-            }
+            myDbEnvironment = new Environment(new File("/tmp/" + dbName), envConfig);
+             myDbEnvironment.close();
+
         } catch (DatabaseException dbe) {
            return "Error";
         }
-  
-
-
-           /**
-    *   @TODO
-    *   @Major Refactor - WIP -
-    */
         return "Success!";
     }
 
@@ -91,10 +76,7 @@ public class DBMSController implements TransactionWorker{
     @RequestMapping(value = "/createTable", method = RequestMethod.POST)
     public String createTable(@RequestParam(value="dbName", required = true) String dbName,
                               @RequestBody(required = false) String table) throws Exception {
-        /**
-    *   @TODO
-    *   @Major Refactor - WIP -
-    */
+
         String result;
         Table newTable;
         
@@ -113,12 +95,12 @@ public class DBMSController implements TransactionWorker{
             // Open the environment, creating one if it does not exist
             EnvironmentConfig envConfig = new EnvironmentConfig();
             envConfig.setAllowCreate(true);
-            myDbEnvironment = new Environment(new File("/tmp/" + dbName),
-                                              envConfig);
+            myDbEnvironment = new Environment(new File("/tmp/" + dbName), envConfig);
  
             // Open the database, creating one if it does not exist
             DatabaseConfig dbConfig = new DatabaseConfig();
             dbConfig.setAllowCreate(true);
+            com.sleepycat.je.Database myDatabase;
             myDatabase = myDbEnvironment.openDatabase(null,table, dbConfig);
             
            
@@ -137,18 +119,13 @@ public class DBMSController implements TransactionWorker{
                 myDbEnvironment.close();
             }
         } catch (DatabaseException dbe) {
-            //  Exception handling
+           return "Error";
         }
         
         return "Succes";
-        
-         /**
-    *   @TODO
-    *   @Major Refactor - WIP -
-    */
-        
-
-        //Jedis jedis = new Jedis("localhost");
+        //@OLD
+        // ===============old code===================
+        /*//Jedis jedis = new Jedis("localhost");
         //Map tablesData4 = jedis.hgetAll("ce");
         try {
             result = java.net.URLDecoder.decode(table.substring(table.indexOf("&")+1), "UTF-8");
@@ -184,7 +161,7 @@ public class DBMSController implements TransactionWorker{
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return "Success!";
+        return "Success!";*/
     }
 
     @RequestMapping(value = "/dropDatabase", method = RequestMethod.DELETE)
@@ -222,10 +199,58 @@ public class DBMSController implements TransactionWorker{
     @RequestMapping(value = "/createIndex", method = RequestMethod.POST)
     public String createIndex(@RequestParam(value="dbName", required = true) String dbName,
                               @RequestParam(value="tableName", required = true) String tableName,
+                              @RequestParam(value="fields", required = true) String fields,
+                              @RequestParam(value="name", required = true) String name,
                               @RequestBody(required = false) String indexFile) throws Exception {
 
 
-        PrimaryIndex<String,IndexFile> indexFileIndex;
+        // Open the environment, creating one if it does not exist
+        EnvironmentConfig envConfig = new EnvironmentConfig();
+        envConfig.setAllowCreate(true);
+        myDbEnvironment = new Environment(new File("/tmp/" + dbName), envConfig);
+
+        // Open the database, creating one if it does not exist
+        DatabaseConfig dbConfig = new DatabaseConfig();
+        dbConfig.setAllowCreate(true);
+        com.sleepycat.je.Database myDatabase;
+        myDatabase = myDbEnvironment.openDatabase(null,name + "Index", dbConfig);
+
+        //add to index
+        com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + tableName, dbConfig);
+        javaCatalog = new StoredClassCatalog(catalogDb);
+
+        Transaction txn = env.beginTransaction(null, null);
+
+        DatabaseEntry keyEntry = new DatabaseEntry();
+        DatabaseEntry dataEntry = new DatabaseEntry();
+
+
+        //@WIP
+      /*   *//* retrieve the data *//*
+        Cursor cursor = catalogDb.openCursor(null, null);
+
+        while (cursor.getNext(keyEntry, dataEntry, LockMode.DEFAULT) ==
+                OperationStatus.SUCCESS) {
+
+            StringBinding.stringToEntry(primaryKey, keyEntry);
+            StringBinding.stringToEntry(valuesEntity, dataEntry);
+
+            OperationStatus status = catalogDb.put(txn, keyEntry, dataEntry);
+
+            txn.commit();
+
+            System.out.println("key=" +
+                    StringBinding.entryToString(keyEntry) +
+                    " data=" +
+                    StringBinding.entryToString(dataEntry));
+        }
+        cursor.close();*/
+        //@WIP
+
+//
+//        supplierByCityDb = env.openSecondaryDatabase(null, "index" + tableName, myDatabase, secConfig);
+
+/*        PrimaryIndex<String,IndexFile> indexFileIndex;
 
         String result;
         IndexFile newIndexFile;
@@ -261,7 +286,7 @@ public class DBMSController implements TransactionWorker{
 
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
         return "Index file successfully created!";
     }
 
@@ -556,9 +581,9 @@ String altccceva = foundData.toString();
             String dataString = new String(foundData.getData(),"UTF-8");
             //TODO : contains is always false, because of non-UTF8 characters
             boolean contains = Arrays.stream(cols).anyMatch(keyString::equals);
-            if (contains && keyString.equals(cond[0]) && dataString.equals(cond[1])) {
+//            if (contains && keyString.equals(cond[0]) && dataString.equals(cond[1])) {
                 res = res + keyString + " " + dataString + '\n';
-            }
+            //}
            // res = res + keyString + " " + dataString + '\n';
 //            System.out.println("Key | Data : " + keyString + " | " +
 //                    dataString + "");
