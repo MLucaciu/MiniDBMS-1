@@ -226,7 +226,7 @@ public class DBMSController implements TransactionWorker{
 
 
         //@WIP
-        *//* retrieve the data *//*
+        //* retrieve the data *//*
         Cursor cursor = catalogDb.openCursor(null, null);
 
         while (cursor.getNext(keyEntry, dataEntry, LockMode.DEFAULT) ==
