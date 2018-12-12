@@ -543,7 +543,7 @@ public class DBMSController implements TransactionWorker{
         // Create the Serial class catalog.  This holds the serialized class
         // format for all database records of serial format.
         //
-        com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + tableName, dbConfig);
+        com.sleepycat.je.Database catalogDb = env.openDatabase(null,tableName, dbConfig);
         javaCatalog = new StoredClassCatalog(catalogDb);
         Transaction txn = env.beginTransaction(null, null);
 
@@ -574,24 +574,26 @@ public class DBMSController implements TransactionWorker{
         DatabaseEntry foundData = new DatabaseEntry();
         String[] cond = condition.split("=");
         String res = "";
+        String res2= "";
         while (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) ==
                 OperationStatus.SUCCESS) {
 
-String cddeva =  foundKey.toString();
-String altccceva = foundData.toString();
             String keyString = new String(foundKey.getData(),"UTF-8");
             String dataString = new String(foundData.getData(),"UTF-8");
-            //TODO : contains is always false, because of non-UTF8 characters
-            boolean contains = Arrays.stream(cols).anyMatch(keyString::equals);
-//            if (contains && keyString.equals(cond[0]) && dataString.equals(cond[1])) {
-                res = res + keyString + " " + dataString + '\n';
-            //}
-           // res = res + keyString + " " + dataString + '\n';
+            
+            String dataB = StringBinding.entryToString(foundData.getData());
+            String keyB = StringBinding.entryToString(foundKey.getData());
+            
+            boolean contains = Arrays.stream(cols).anyMatch(keyB::equals);
+            if (contains && keyString.equals(cond[0]) && dataString.equals(cond[1])) {
+                res2 = res2 + keyB + " " + dataB + '\n';
+            }
+            res = res + keyString + " " + dataString + '\n';
 //            System.out.println("Key | Data : " + keyString + " | " +
 //                    dataString + "");
         }
         cursor.close();
-        return res;
+        return res + "\n" + res2;
     }
 
     /**
