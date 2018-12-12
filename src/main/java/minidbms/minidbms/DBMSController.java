@@ -101,6 +101,7 @@ public class DBMSController implements TransactionWorker{
  
             // Open the database, creating one if it does not exist
             DatabaseConfig dbConfig = new DatabaseConfig();
+            dbConfig.setTransactional(true);
             dbConfig.setAllowCreate(true);
             com.sleepycat.je.Database myDatabase;
             myDatabase = myDbEnvironment.openDatabase(null,table, dbConfig);
@@ -208,11 +209,13 @@ public class DBMSController implements TransactionWorker{
 
         // Open the environment, creating one if it does not exist
         EnvironmentConfig envConfig = new EnvironmentConfig();
+        envConfig.setTransactional(true);
         envConfig.setAllowCreate(true);
         myDbEnvironment = new Environment(new File("."), envConfig);
 
-        // Open the database, creating one if it does not exist
+        // create index table
         DatabaseConfig dbConfig = new DatabaseConfig();
+        dbConfig.setTransactional(true);
         dbConfig.setAllowCreate(true);
         com.sleepycat.je.Database myDatabase;
         myDatabase = myDbEnvironment.openDatabase(null,name + "Index", dbConfig);
@@ -220,6 +223,8 @@ public class DBMSController implements TransactionWorker{
         //add to index
 //        com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + tableName, dbConfig);
 //        javaCatalog = new StoredClassCatalog(catalogDb);
+        com.sleepycat.je.Database catalogDb = env.openDatabase(null,tableName, dbConfig);
+        javaCatalog = new StoredClassCatalog(catalogDb);
 
 //        Transaction txn = env.beginTransaction(null, null);
 
@@ -228,25 +233,27 @@ public class DBMSController implements TransactionWorker{
 
 
         //@WIP
-      /*   *//* retrieve the data *//*
+        //* retrieve the data *//*
         Cursor cursor = catalogDb.openCursor(null, null);
 
         while (cursor.getNext(keyEntry, dataEntry, LockMode.DEFAULT) ==
                 OperationStatus.SUCCESS) {
 
-            StringBinding.stringToEntry(primaryKey, keyEntry);
-            StringBinding.stringToEntry(valuesEntity, dataEntry);
+            //String value = StringBinding.entryToString(dataEntry);
+            
+           // StringBinding.stringToEntry(primaryKey, keyEntry);
+           // StringBinding.stringToEntry(valuesEntity, dataEntry);
 
-            OperationStatus status = catalogDb.put(txn, keyEntry, dataEntry);
+           // OperationStatus status = catalogDb.put(txn, keyEntry, dataEntry);
 
-            txn.commit();
+           // txn.commit();
 
             System.out.println("key=" +
                     StringBinding.entryToString(keyEntry) +
                     " data=" +
                     StringBinding.entryToString(dataEntry));
         }
-        cursor.close();*/
+        cursor.close();
         //@WIP
 
 //
@@ -543,7 +550,7 @@ public class DBMSController implements TransactionWorker{
         // Create the Serial class catalog.  This holds the serialized class
         // format for all database records of serial format.
         //
-        com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + tableName, dbConfig);
+        com.sleepycat.je.Database catalogDb = env.openDatabase(null,tableName, dbConfig);
         javaCatalog = new StoredClassCatalog(catalogDb);
         Transaction txn = env.beginTransaction(null, null);
 
@@ -574,19 +581,21 @@ public class DBMSController implements TransactionWorker{
         DatabaseEntry foundData = new DatabaseEntry();
         String[] cond = condition.split("=");
         String res = "";
+        String res2= "";
         while (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) ==
                 OperationStatus.SUCCESS) {
 
-String cddeva =  foundKey.toString();
-String altccceva = foundData.toString();
             String keyString = new String(foundKey.getData(),"UTF-8");
             String dataString = new String(foundData.getData(),"UTF-8");
+
             //TODO : contains is always false, because of non-UTF8 characters
             boolean contains = Arrays.stream(cols).anyMatch(keyString::equals);
 //            if (contains && keyString.equals(cond[0]) && dataString.equals(cond[1])) {
                 res = res + keyString + " " + dataString + "<br>";
             //}
            // res = res + keyString + " " + dataString + '\n';
+
+
 //            System.out.println("Key | Data : " + keyString + " | " +
 //                    dataString + "");
         }

@@ -1,1 +1,1 @@
-[{"dbName":"hdgfhgf","tables":[{"tableName":"ffff","fileName":"","rowLength":"","structure":[{"attributeName":"id","type":"ce","length":"ce","isNull":"ce"}],"primaryKeys":["id"],"foreignKeys":[],"indexFiles":[]}]}]
+[{"dbName":"cececece","tables":[{"tableName":"teb","fileName":"","rowLength":"","structure":[{"attributeName":"id","type":"1","length":"1","isNull":"1"},{"attributeName":"nume","type":"1","length":"1","isNull":"1"}],"primaryKeys":["id"],"foreignKeys":[],"indexFiles":[]}]}]
