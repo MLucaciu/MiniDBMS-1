@@ -17,6 +17,7 @@ import com.sleepycat.je.DatabaseException;
 import com.sleepycat.persist.EntityCursor;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -637,16 +638,19 @@ String altccceva = foundData.toString();
     }
 
     @RequestMapping(value = "/selectNestedLoopJoin", method = RequestMethod.GET)
-    public String selectNestedLoopJoin(@RequestParam(value="dbName", required = true) String dbName,
+    public ArrayList<String> selectNestedLoopJoin(@RequestParam(value="dbName", required = true) String dbName,
                                  @RequestParam(value="tableName", required = true) String tableName,
                                  @RequestParam(value="tableNameJoin", required = true) String tableNameJoin,
                                  @RequestParam(value = "joinColumn", required = true) String joinColumn,
                                  @RequestParam(value="columns", required = true) String columns,
                                  @RequestParam(value="condition", required = true) String condition) {
 
-        DatabaseEntry keyEntry;
-        DatabaseEntry dataEntry;
-        String result = "";
+        minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
+        Table tableJoin = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableNameJoin)).findFirst().orElse(null);
+
+        DatabaseEntry keyEntry, dataEntry, keyEntryJoin, dataEntryJoin;
+        ArrayList<String> result = new ArrayList<>();
 
         //check if index exists!
 
@@ -669,15 +673,61 @@ String altccceva = foundData.toString();
 
         keyEntry = new DatabaseEntry();
         dataEntry = new DatabaseEntry();
+        keyEntryJoin = new DatabaseEntry();
+        dataEntryJoin = new DatabaseEntry();
+
+        Integer indexForeignKey = table.indexOfForeignKey(joinColumn);
+        Integer indexAttribute = table.indexOfAttribute(joinColumn);
+        Integer noForeignKeys = table.getForeignKeys().size();
+        Integer indexForeignKeyJoin = tableJoin.indexOfForeignKey(joinColumn);
+        Integer indexAttributeJoin =tableJoin.indexOfAttribute(joinColumn);
+        Integer noForeignKeysJoin = tableJoin.getForeignKeys().size();
 
         while (cursor.getNext(keyEntry, dataEntry, LockMode.DEFAULT) ==
                 OperationStatus.SUCCESS) {
+            if(!StringBinding.entryToString(keyEntry).isEmpty()){
+                String onAtt = "";
+                if(indexAttribute != -1){
+                    if(indexAttribute == 0 ){
+                        onAtt = StringBinding.entryToString(keyEntry);
+                    } else {
+                        String[] entities = StringBinding.entryToString(dataEntry).split("#");
+                        onAtt = entities[indexAttribute-1];
+                    }
+                }
+                if(indexForeignKey != -1){
+                    String[] entities = StringBinding.entryToString(dataEntry).split("#");
+                    onAtt = entities[entities.length - noForeignKeys];
+                }
 
+                while (cursorJoin.getNext(keyEntryJoin, dataEntryJoin, LockMode.DEFAULT) ==
+                        OperationStatus.SUCCESS) {
+                    if(!StringBinding.entryToString(keyEntryJoin).isEmpty()){
+                        String onAttJoin ="";
+                        if(indexAttributeJoin != -1){
+                            if(indexAttributeJoin == 0 ){
+                                onAttJoin = StringBinding.entryToString(keyEntryJoin);
+                            } else {
+                                String[] entities = StringBinding.entryToString(dataEntryJoin).split("#");
+                                onAttJoin = entities[indexAttributeJoin-1];
+                            }
+                        }
+                        if(indexForeignKeyJoin != -1){
+                            String[] entities = StringBinding.entryToString(dataEntryJoin).split("#");
+                            onAttJoin = entities[entities.length - noForeignKeysJoin];
+                        }
+
+                        if(onAtt.equalsIgnoreCase(onAttJoin)){
+                            result.add(StringBinding.entryToString(keyEntry) + "#" + StringBinding.entryToString(dataEntry) + ">>>" + StringBinding.entryToString(keyEntryJoin) + "#" + StringBinding.entryToString(dataEntryJoin));
+                        }
+                    }
+                }
+            }
         }
 
-
+        cursorJoin.close();
         cursor.close();
 
-        return "";
+        return result;
     }
 }
