@@ -33,4 +33,8 @@ public class Attribute implements Serializable {
     public String getType() {
         return type;
     }
+
+    public String getAttributeName() {
+        return attributeName;
+    }
 }

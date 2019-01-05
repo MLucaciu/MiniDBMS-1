@@ -2,20 +2,19 @@ package minidbms.minidbms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sleepycat.bind.serial.StoredClassCatalog;
-import com.sleepycat.bind.tuple.IntegerBinding;
 import com.sleepycat.bind.tuple.StringBinding;
-import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.collections.TransactionRunner;
 import com.sleepycat.collections.TransactionWorker;
 import com.sleepycat.je.*;
-import com.sleepycat.persist.EntityStore;
 import com.sleepycat.persist.PrimaryIndex;
-import com.sleepycat.persist.StoreConfig;
-import minidbms.minidbms.Models.*;
-import minidbms.minidbms.Models.Database;
+import minidbms.minidbms.Models.Attribute;
+import minidbms.minidbms.Models.DbEnviroment;
+import minidbms.minidbms.Models.IndexFile;
+import minidbms.minidbms.Models.Table;
 import org.json.JSONException;
 import org.springframework.web.bind.annotation.*;
-import redis.clients.jedis.Jedis;
+import com.sleepycat.je.DatabaseException;
+import com.sleepycat.persist.EntityCursor;
 
 import java.io.*;
 import java.util.*;
@@ -33,6 +32,9 @@ public class DBMSController implements TransactionWorker{
 
     private Environment env;
     private StoredClassCatalog javaCatalog;
+    EnvironmentConfig envConfig;
+    DatabaseConfig dbConfig;
+    Cursor cursor;
 
     String[][] records1 = {{"27", "Jonah"}, {"18", "Alan"}, {"28", "Glory"},
             {"18", "Popeye"}, {"28", "Alan"}};
@@ -46,12 +48,27 @@ public class DBMSController implements TransactionWorker{
 
     @RequestMapping(value = "/createDatabase", method = RequestMethod.POST)
     @ResponseBody
-    public String createDataBase(@RequestParam(value="dbName", required = true) String dbName) throws IOException, JSONException {
+    public String createDataBase(@RequestParam(value="dbName", required = true) String dbName) throws IOException {
         if(this.databases.stream().filter(db -> db.getDbName().equals(dbName)).count() != 0){
             return "Database already exists!";
         }
         databases.add(new minidbms.minidbms.Models.Database(dbName));
         mapper.writeValue(new File(PATH_TO_JSON), databases );
+        return "Success!";
+    }
+
+    @RequestMapping(value = "/addData", method = RequestMethod.POST)
+    @ResponseBody
+    public String addData() throws Exception {
+        createDataBase("Flowers");
+        createTable("Flowers", "dbName=Flowers&%7B%22tableName%22%3A%22ExoticCategory%22%2C%22fileName%22%3A%22%22%2C%22rowLength%22%3A%22%22%2C%22structure%22%3A%5B%7B%22attributeName%22%3A%22IdCategory%22%2C%22type%22%3A%22Integer%22%2C%22length%22%3A%225%22%2C%22isNull%22%3A%22False%22%7D%2C%7B%22attributeName%22%3A%22Name%22%2C%22type%22%3A%22String%22%2C%22length%22%3A%2210%22%2C%22isNull%22%3A%22False%22%7D%2C%7B%22attributeName%22%3A%22Country%22%2C%22type%22%3A%22String%22%2C%22length%22%3A%2215%22%2C%22isNull%22%3A%22False%22%7D%5D%2C%22primaryKeys%22%3A%5B%22Id%22%5D%2C%22foreignKeys%22%3A%5B%5D%2C%22indexFiles%22%3A%5B%5D%7D=");
+        createTable("Flowers", "dbName=&%7B%22tableName%22%3A%22RosesCategory%22%2C%22fileName%22%3A%22%22%2C%22rowLength%22%3A%22%22%2C%22structure%22%3A%5B%7B%22attributeName%22%3A%22Id%22%2C%22type%22%3A%22Integer%22%2C%22length%22%3A%225%22%2C%22isNull%22%3A%22False%22%7D%2C%7B%22attributeName%22%3A%22Name%22%2C%22type%22%3A%22String%22%2C%22length%22%3A%2210%22%2C%22isNull%22%3A%22False%22%7D%5D%2C%22primaryKeys%22%3A%5B%22Id%22%5D%2C%22foreignKeys%22%3A%5B%5D%2C%22indexFiles%22%3A%5B%5D%7D=");
+        createTable("Flowers", "dbName=Flowers&%7B%22tableName%22%3A%22ExoticFlowers%22%2C%22fileName%22%3A%22%22%2C%22rowLength%22%3A%22%22%2C%22structure%22%3A%5B%7B%22attributeName%22%3A%22Id%22%2C%22type%22%3A%22Integer%22%2C%22length%22%3A%2210%22%2C%22isNull%22%3A%22False%22%7D%2C%7B%22attributeName%22%3A%22Name%22%2C%22type%22%3A%22String%22%2C%22length%22%3A%2210%22%2C%22isNull%22%3A%22False%22%7D%5D%2C%22primaryKeys%22%3A%5B%22Id%22%5D%2C%22foreignKeys%22%3A%5B%7B%22tableReference%22%3A%22ExoticCategory%22%2C%22keyReference%22%3A%22IdCategory%22%2C%22nameForeignKey%22%3A%22IdCategory%22%7D%5D%2C%22indexFiles%22%3A%5B%5D%7D=" );
+        insert("Flowers", "ExoticCategory", "dbName=Flowers&tableName=ExoticCategory&%221%23Heliconia%23Madagascar%22=");
+        insert("Flowers", "ExoticCategory", "dbName=Flowers&tableName=ExoticCategory&%222%23Ginger%23Australia%22=");
+        insert("Flowers", "ExoticFlowers", "dbName=Flowers&tableName=ExoticFlowers&%221%23Lobster%231%22=");
+        insert("Flowers", "ExoticFlowers", "dbName=Flowers&tableName=ExoticFlowers&%222%23Anthurium%231%22=");
+        insert("Flowers", "ExoticFlowers", "dbName=Flowers&tableName=ExoticFlowers&%223%23Mokara%231%22=");
         return "Success!";
     }
 
@@ -211,21 +228,41 @@ public class DBMSController implements TransactionWorker{
         }
 
         //check for foreign keys
-        /* int noForeignKeys = table.getForeignKeys().size();
-        int indexForeignKeys = -1;
-        for(int i = noPrimaryKeys; i < noForeignKeys ; i++){
-            indexForeignKeys++;
-            //split("#")
-            String tableForeignKeysName = table.getForeignKeys().get(indexForeignKeys).getTableReference();
-            Map tableForeignKeys = jedis.hgetAll(tableForeignKeysName);
-            String foreignKeyValue = entities[i];
-            if(((HashMap) tableForeignKeys).keySet().stream().filter(e -> e.toString().contains(foreignKeyValue)).count() == 0){
+        DatabaseEntry keyEntry;
+        DatabaseEntry dataEntry;
+
+        for(int i =0; i<table.getForeignKeys().size();i++){
+            envConfig = new EnvironmentConfig();
+            envConfig.setTransactional(true);
+            envConfig.setAllowCreate(true);
+            env = new Environment(new File("."), envConfig);
+
+            // Set the Berkeley DB config for opening all stores.
+            dbConfig = new DatabaseConfig();
+            dbConfig.setTransactional(true);
+            dbConfig.setAllowCreate(true);
+
+            // Create the Serial class catalog.  This holds the serialized class format for all database records of serial format.
+            com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + table.getForeignKeys().get(i).getTableReference(), dbConfig);
+            javaCatalog = new StoredClassCatalog(catalogDb);
+
+            cursor = catalogDb.openCursor(null, null);
+            keyEntry = new DatabaseEntry();
+            dataEntry = new DatabaseEntry();
+
+            boolean foreignKeyFound = false;
+            while (cursor.getNext(keyEntry, dataEntry, LockMode.DEFAULT) ==
+                    OperationStatus.SUCCESS) {
+                if(entities[entities.length-table.getForeignKeys().size()+i].equalsIgnoreCase(StringBinding.entryToString(keyEntry))){
+                    foreignKeyFound = true;
+                }
+            }
+
+            if(!foreignKeyFound){
                 return "Foreign Key does not exists!";
             }
-            if(((HashMap) tableForeignKeys).values().stream().filter(e -> e.toString().contains(foreignKeyValue)).count() == 0){
-                return "Foreign Key does not exists!";
-            }
-        } */
+            cursor.close();
+        }
 
         //check attributes(type,length,IsNull)
         int indexAtt = -1;
@@ -261,26 +298,25 @@ public class DBMSController implements TransactionWorker{
             valuesEntity += "#" + entities[i];
         }
 
-        EnvironmentConfig envConfig = new EnvironmentConfig();
+        envConfig = new EnvironmentConfig();
         envConfig.setTransactional(true);
         envConfig.setAllowCreate(true);
         env = new Environment(new File("."), envConfig);
 
         // Set the Berkeley DB config for opening all stores.
-        DatabaseConfig dbConfig = new DatabaseConfig();
+        dbConfig = new DatabaseConfig();
         dbConfig.setTransactional(true);
         dbConfig.setAllowCreate(true);
 
         // Create the Serial class catalog.  This holds the serialized class
         // format for all database records of serial format.
-        //
         com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + tableName, dbConfig);
         javaCatalog = new StoredClassCatalog(catalogDb);
 
         Transaction txn = env.beginTransaction(null, null);
 
-        DatabaseEntry keyEntry = new DatabaseEntry();
-        DatabaseEntry dataEntry = new DatabaseEntry();
+        keyEntry = new DatabaseEntry();
+        dataEntry = new DatabaseEntry();
 
         StringBinding.stringToEntry(primaryKey, keyEntry);
         StringBinding.stringToEntry(valuesEntity, dataEntry);
@@ -467,7 +503,7 @@ public class DBMSController implements TransactionWorker{
         while (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) ==
                 OperationStatus.SUCCESS) {
 
-String cddeva =  foundKey.toString();
+        String cddeva =  foundKey.toString();
 String altccceva = foundData.toString();
             String keyString = new String(foundKey.getData(),"UTF-8");
             String dataString = new String(foundData.getData(),"UTF-8");
@@ -505,27 +541,98 @@ String altccceva = foundData.toString();
                          @RequestParam(value="tableNameJoin", required = true) String tableNameJoin,
                          @RequestParam(value = "joinColumn", required = true) String joinColumn,
                          @RequestParam(value="columns", required = true) String columns,
-                         @RequestParam(value="condition", required = true) String condition)
-            throws IOException {
+                         @RequestParam(value="condition", required = true) String condition) {
 
-        List<String[][]> result = new ArrayList<>();
-        Map<String, List<String[]>> map = new HashMap<>();
 
-        for (String[] record : records1) {
-            List<String[]> v = map.getOrDefault(record[1], new ArrayList<>());
-            v.add(record);
-            map.put(record[1], v);
+        DatabaseEntry keyEntry, dataEntry;
+        String result = "";
+        Map<String, String> hashMapTable = new HashMap<>();
+
+        minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
+        Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
+        Table tableJoin = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableNameJoin)).findFirst().orElse(null);
+
+        envConfig = new EnvironmentConfig();
+        envConfig.setTransactional(true);
+        envConfig.setAllowCreate(true);
+        env = new Environment(new File("."), envConfig);
+
+        // Set the Berkeley DB config for opening all stores.
+        dbConfig = new DatabaseConfig();
+        dbConfig.setTransactional(true);
+        dbConfig.setAllowCreate(true);
+
+        // Create the Serial class catalog.  This holds the serialized class format for all database records of serial format.
+        com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + tableName, dbConfig);
+        com.sleepycat.je.Database catalogDbJoin = env.openDatabase(null, dbName + "-" + tableNameJoin, dbConfig);
+
+        Integer indexForeignKey;
+        Integer indexAttribute;
+        Integer noForeignKeys;
+        Integer noForeignKeysJoin;
+        Integer indexForeignKeyJoin;
+        Integer indexAttributeJoin;
+        Cursor cursorJoin;
+
+        if(catalogDb.count() < catalogDbJoin.count()){
+            cursor = catalogDb.openCursor(null, null);
+            cursorJoin = catalogDbJoin.openCursor(null, null);
+            indexForeignKey = table.indexOfForeignKey(joinColumn);
+            indexAttribute = table.indexOfAttribute(joinColumn);
+            noForeignKeys = table.getForeignKeys().size();
+            indexForeignKeyJoin = tableJoin.indexOfForeignKey(joinColumn);
+            indexAttributeJoin =tableJoin.indexOfAttribute(joinColumn);
+            noForeignKeysJoin = tableJoin.getForeignKeys().size();
+        } else {
+            cursor = catalogDbJoin.openCursor(null, null);
+            cursorJoin = catalogDb.openCursor(null, null);
+            indexForeignKey = tableJoin.indexOfForeignKey(joinColumn);
+            indexAttribute = tableJoin.indexOfAttribute(joinColumn);
+            noForeignKeys = tableJoin.getForeignKeys().size();
+            indexForeignKeyJoin = table.indexOfForeignKey(joinColumn);
+            indexAttributeJoin =table.indexOfAttribute(joinColumn);
+            noForeignKeysJoin = table.getForeignKeys().size();
         }
 
-        for (String[] record : records2) {
-            List<String[]> lst = map.get(record[2]);
-            if (lst != null) {
-                lst.stream().forEach(r -> {
-                    result.add(new String[][]{r, record});
-                });
+        keyEntry = new DatabaseEntry();
+        dataEntry = new DatabaseEntry();
+
+        while (cursor.getNext(keyEntry, dataEntry, LockMode.DEFAULT) ==
+                OperationStatus.SUCCESS) {
+            if (indexAttribute != -1){
+                if (indexAttribute == 0){
+                    hashMapTable.put(StringBinding.entryToString(keyEntry), StringBinding.entryToString(keyEntry) + '#' + StringBinding.entryToString(dataEntry));
+                } else {
+                    String[] entities = StringBinding.entryToString(dataEntry).split("#");
+                    hashMapTable.put(entities[indexAttribute-1], StringBinding.entryToString(keyEntry) + '#' + StringBinding.entryToString(dataEntry));
+                }
+            }
+
+            if(indexForeignKey != -1){
+                String[] entities = StringBinding.entryToString(dataEntry).split("#");
+                hashMapTable.put(entities[entities.length  - noForeignKeys], StringBinding.entryToString(keyEntry) + '#' + StringBinding.entryToString(dataEntry));
             }
         }
-        return "";
+
+        while (cursorJoin.getNext(keyEntry, dataEntry, LockMode.DEFAULT) ==
+                OperationStatus.SUCCESS) {
+            if(indexAttributeJoin != -1){
+                if(indexAttributeJoin == 0 ){
+                    hashMapTable.put(StringBinding.entryToString(keyEntry),  hashMapTable.get(StringBinding.entryToString(keyEntry))+ ">>>" + StringBinding.entryToString(keyEntry) + '#' + StringBinding.entryToString(dataEntry));
+                } else {
+                    String[] entities = StringBinding.entryToString(dataEntry).split("#");
+                    hashMapTable.put(entities[indexAttributeJoin-1], hashMapTable.get(entities[indexAttributeJoin-1]) + ">>>" + StringBinding.entryToString(keyEntry) + '#' + StringBinding.entryToString(dataEntry));
+                }
+            }
+
+            if(indexForeignKeyJoin != -1){
+                String[] entities = StringBinding.entryToString(dataEntry).split("#");
+                hashMapTable.put(entities[entities.length - noForeignKeysJoin], hashMapTable.get(entities[entities.length - noForeignKeysJoin]) + ">>>" + StringBinding.entryToString(keyEntry) + "#" + StringBinding.entryToString(dataEntry));
+            }
+        }
+
+        hashMapTable.remove("");
+        return hashMapTable.toString();
 
     }
 
@@ -535,43 +642,42 @@ String altccceva = foundData.toString();
                                  @RequestParam(value="tableNameJoin", required = true) String tableNameJoin,
                                  @RequestParam(value = "joinColumn", required = true) String joinColumn,
                                  @RequestParam(value="columns", required = true) String columns,
-                                 @RequestParam(value="condition", required = true) String condition)
-            throws IOException {
+                                 @RequestParam(value="condition", required = true) String condition) {
 
-        FileWriter writer = new FileWriter("");
-        // reverse join relation to reduce IOS
-        //if (this.file2size < this.file1size) {
+        DatabaseEntry keyEntry;
+        DatabaseEntry dataEntry;
+        String result = "";
 
-        //}
+        //check if index exists!
 
+        envConfig = new EnvironmentConfig();
+        envConfig.setTransactional(true);
+        envConfig.setAllowCreate(true);
+        env = new Environment(new File("."), envConfig);
 
-        BufferedReader file1br = new BufferedReader(new FileReader(""));
-        // Skip 1st line
-        file1br.readLine();
-        ArrayList<String[]> r1 = new ArrayList<>();
-        Object br2 = null;
-        boolean reverse = false;
-        boolean headerRow = true;
-        while (true) {
+        // Set the Berkeley DB config for opening all stores.
+        dbConfig = new DatabaseConfig();
+        dbConfig.setTransactional(true);
+        dbConfig.setAllowCreate(true);
 
-            if (headerRow) {
+        // Create the Serial class catalog.  This holds the serialized class format for all database records of serial format.
+        com.sleepycat.je.Database catalogDb = env.openDatabase(null, dbName + "-" + tableName, dbConfig);
+        com.sleepycat.je.Database catalogDbJoin = env.openDatabase(null, dbName + "-" + tableNameJoin, dbConfig);
 
-                BufferedReader brheder = new BufferedReader(new FileReader(""));
-                //ArrayList<String[]> r2header = ReadCSV.readFileChunk(brheder, 2);
-                if (false) {
-                    headerRow = false;
-                }
+        cursor = catalogDb.openCursor(null, null);
+        Cursor cursorJoin = catalogDbJoin.openCursor(null, null);
 
-                //br2 = this.NLJjoinChunks(br2, writer, r1, reverse);
-                writer.flush();
-                reverse = !reverse;
+        keyEntry = new DatabaseEntry();
+        dataEntry = new DatabaseEntry();
 
-            }
-
-            writer.close();
-
-            return "";
+        while (cursor.getNext(keyEntry, dataEntry, LockMode.DEFAULT) ==
+                OperationStatus.SUCCESS) {
 
         }
+
+
+        cursor.close();
+
+        return "";
     }
 }

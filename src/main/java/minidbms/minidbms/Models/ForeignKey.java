@@ -22,4 +22,8 @@ public class ForeignKey {
     public String getTableReference() {
         return tableReference;
     }
+
+    public String getNameForeignKey() {
+        return nameForeignKey;
+    }
 }
