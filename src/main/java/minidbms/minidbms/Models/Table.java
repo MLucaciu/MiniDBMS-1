@@ -52,4 +52,22 @@ public class Table implements Serializable {
     public List<ForeignKey> getForeignKeys() {
         return foreignKeys;
     }
+
+    public Integer indexOfForeignKey(String foreignKeyName){
+        for (int i = 0;i<this.foreignKeys.size();i++) {
+            if(this.foreignKeys.get(i).getNameForeignKey().equalsIgnoreCase(foreignKeyName)){
+                return  i;
+            }
+        }
+        return -1;
+    }
+
+    public Integer indexOfAttribute(String attributeName){
+        for (int i = 0;i<this.structure.size();i++) {
+            if(this.structure.get(0).getAttributeName().equalsIgnoreCase(attributeName)){
+                return  i;
+            }
+        }
+        return -1;
+    }
 }
