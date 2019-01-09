@@ -568,7 +568,9 @@ public class DBMSController implements TransactionWorker{
     public String select(@RequestParam(value="dbName", required = true) String dbName,
                             @RequestParam(value="tableName", required = true) String tableName,
                             @RequestParam(value="columns", required = true) String columns,
-                             @RequestParam(value="condition", required = true) String condition)
+                             @RequestParam(value="condition", required = true) String condition,
+                         @RequestParam(value="condition", required = true) String groupBy,
+                         @RequestParam(value="condition", required = true) String having)
     throws IOException {
 
         minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
@@ -576,7 +578,7 @@ public class DBMSController implements TransactionWorker{
 
         String[] cols = columns.split(",");
 //        for (String col : cols) {
-//            System.out.println(col);
+//            System.out.println(col);=\
 //        }
 
         EnvironmentConfig envConfig = new EnvironmentConfig();
@@ -632,6 +634,7 @@ public class DBMSController implements TransactionWorker{
             String dataString = new String(foundData.getData(),"UTF-8");
 
             //TODO : contains is always false, because of non-UTF8 characters
+            if(having!=null){}
             boolean contains = Arrays.stream(cols).anyMatch(keyString::equals);
 //            if (contains && keyString.equals(cond[0]) && dataString.equals(cond[1])) {
                 res = res + keyString + " " + dataString + "<br>";
@@ -771,7 +774,7 @@ public class DBMSController implements TransactionWorker{
                                  @RequestParam(value="tableNameJoin", required = true) String tableNameJoin,
                                  @RequestParam(value = "joinColumn", required = true) String joinColumn,
                                  @RequestParam(value="columns", required = true) String columns,
-                                 @RequestParam(value="condition", required = true) String condition) {
+                                 @RequestParam(value="condition", required = true) String condition) throws Exception {
 
         minidbms.minidbms.Models.Database database = this.databases.stream().filter(db -> db.getDbName().equalsIgnoreCase(dbName)).findFirst().orElse(null);
         Table table = database.getTables().stream().filter(tb -> tb.getTableName().equalsIgnoreCase(tableName)).findFirst().orElse(null);
@@ -780,7 +783,48 @@ public class DBMSController implements TransactionWorker{
         DatabaseEntry keyEntry, dataEntry, keyEntryJoin, dataEntryJoin;
         ArrayList<String> result = new ArrayList<>();
 
-        //check if index exists!
+        //check if index exists
+        if(table.getIndexFiles().stream().filter(indexFile -> indexFile.getIndexName().equalsIgnoreCase(tableName + "-" + joinColumn)).count() != 0){
+            EnvironmentConfig envConfig = new EnvironmentConfig();
+            envConfig.setTransactional(true);
+            envConfig.setAllowCreate(true);
+            String fileName = database.getDbName() + "-" + tableName + "Index";
+            Environment env = new Environment(new File("."), envConfig);
+            DbEnviroment worker = new DbEnviroment(env, fileName);
+
+            com.sleepycat.je.Database catalogDbJoin = env.openDatabase(null, dbName + "-" + tableNameJoin, dbConfig);
+
+            keyEntry = new DatabaseEntry();
+            dataEntry = new DatabaseEntry();
+            keyEntryJoin = new DatabaseEntry();
+            dataEntryJoin = new DatabaseEntry();
+
+            Integer indexForeignKey = table.indexOfForeignKey(joinColumn);
+            Integer indexAttribute = table.indexOfAttribute(joinColumn);
+            Integer noForeignKeys = table.getForeignKeys().size();
+            Integer indexForeignKeyJoin = tableJoin.indexOfForeignKey(joinColumn);
+            Integer indexAttributeJoin =tableJoin.indexOfAttribute(joinColumn);
+            Integer noForeignKeysJoin = tableJoin.getForeignKeys().size();
+
+            while (cursor.getNext(keyEntry, dataEntry, LockMode.DEFAULT) ==
+                    OperationStatus.SUCCESS) {
+                if (!StringBinding.entryToString(keyEntry).isEmpty()) {
+                    String onAtt = "";
+                    if (indexAttribute != -1) {
+                        if (indexAttribute == 0) {
+                            onAtt = StringBinding.entryToString(keyEntry);
+                        } else {
+                            String[] entities = StringBinding.entryToString(dataEntry).split("#");
+                            onAtt = entities[indexAttribute - 1];
+                        }
+                    }
+                    if (indexForeignKey != -1) {
+                        String[] entities = StringBinding.entryToString(dataEntry).split("#");
+                        onAtt = entities[entities.length - noForeignKeys];
+                    }
+                }
+            }
+        }
 
         envConfig = new EnvironmentConfig();
         envConfig.setTransactional(true);
